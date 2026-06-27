@@ -7,11 +7,14 @@ import store from './store/store.js'
 import {Route, RouterProvider,createBrowserRouter, createRoutesFromElements } from 'react-router-dom'
 import Layout from './components/Layout.jsx'
 import Login from './pages/Login.jsx'
-
+import Register from './pages/Register.jsx'
+import Dashboard from './pages/Dashboard.jsx'
 const router=createBrowserRouter(
   createRoutesFromElements(
     <Route path="/" element={<Layout/>}>
       <Route path="login" element={<Login/>} />
+      <Route path="register" element={<Register/>} />
+      <Route path="dashboard" element={<Dashboard/>} />
     </Route>
   )
 )
