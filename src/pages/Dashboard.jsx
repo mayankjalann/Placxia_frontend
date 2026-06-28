@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 // Import our specific Dashboards
 import StudentDash from './StudentDash';
 import CompanyDash from './CompanyDash';
+import AdminDash from './AdminDash';
 // import CompanyDash from './CompanyDash'; // (We will build this tomorrow)
 
 const Dashboard = () => {
@@ -29,7 +30,7 @@ const Dashboard = () => {
     } 
     else if (userData.role === 'ADMIN') {
         // We will replace this with <AdminDash /> tomorrow!
-        return <div className="min-h-screen bg-slate-950 text-white p-10 text-3xl">Admin Dashboard Under Construction</div>;
+        return <AdminDash/>
     } 
     else if (userData.role === 'COMPANY') {
         // We will replace this with <CompanyDash /> tomorrow!

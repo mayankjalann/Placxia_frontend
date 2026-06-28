@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import JobDetailsModal from '../components/JobDetailsModal';
 
 const StudentDash=()=>{
     const userData=useSelector((state)=> state.auth.userData);
@@ -11,14 +12,24 @@ const StudentDash=()=>{
     const [jobs, setJobs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [appliedJobs, setAppliedJobs] = useState(new Set());
+    const [selectedJobId, setSelectedJobId] = useState(null);
 
     useEffect(()=>{
-        const fetchJobs= async()=>{
+        const fetchDashboardData = async()=>{
             try{
-                const response = await axios.get('http://localhost:8000/api/v1/job/getAllOpenJobs', {
-                    withCredentials: true 
-                });
-                setJobs(response.data.data);
+                // Fetch both open jobs AND my applications in parallel!
+                const [jobsRes, appsRes] = await Promise.all([
+                    axios.get('http://localhost:8000/api/v1/job/getAllOpenJobs', { withCredentials: true }),
+                    axios.get('http://localhost:8000/api/v1/application/getMyApplications', { withCredentials: true })
+                ]);
+                
+                setJobs(jobsRes.data.data);
+                
+                // Build a Set of all Job IDs the student has applied to from the DB!
+                const appliedIds = new Set(appsRes.data.data.map(app => app.job));
+                setAppliedJobs(appliedIds);
+                
                 setLoading(false);
             }catch (err) {
                 setError(err.response?.data?.message || "Failed to load jobs");
@@ -27,7 +38,7 @@ const StudentDash=()=>{
         }
 
         if(userData){
-            fetchJobs();
+            fetchDashboardData();
         }else{
             navigate('/login');
         }
@@ -42,9 +53,15 @@ const StudentDash=()=>{
             {}, // Empty body because we only need the jobId in the URL
             { withCredentials: true }
             );
+            setAppliedJobs(prev => new Set(prev).add(jobId)); // Instantly update the UI
             alert("Successfully applied to the job! 🎉");
         } catch (err) {
-            alert(err.response?.data?.message || "Failed to apply");
+            // If the backend says we already applied, just update the UI silently!
+            if (err.response?.data?.message === "You have already applied for this job") {
+                setAppliedJobs(prev => new Set(prev).add(jobId));
+            } else {
+                alert(err.response?.data?.message || "Failed to apply");
+            }
         }
     };
 
@@ -99,16 +116,39 @@ const StudentDash=()=>{
                                             📍 <span>{job.location}</span>
                                         </p>
                                     </div>
-                                    <button 
-                                    onClick={() => handleApply(job._id)}
-                                        className="w-full py-2.5 bg-slate-800 hover:bg-indigo-600 text-white font-semibold rounded-lg transition-colors"
-                                    >
-                                    Apply Now
-                                </button>
+                                    <div className="flex gap-3">
+                                        <button 
+                                            onClick={() => setSelectedJobId(job._id)}
+                                            className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-lg transition-colors border border-slate-700"
+                                        >
+                                            View Details
+                                        </button>
+                                        <button 
+                                            onClick={() => handleApply(job._id)}
+                                            disabled={appliedJobs.has(job._id)}
+                                            className={`flex-1 py-2.5 font-semibold rounded-lg transition-colors ${
+                                                appliedJobs.has(job._id) 
+                                                ? "bg-green-600/20 text-green-500 cursor-not-allowed border border-green-600/50" 
+                                                : "bg-indigo-600 hover:bg-indigo-700 text-white"
+                                            }`}
+                                        >
+                                            {appliedJobs.has(job._id) ? "Applied ✓" : "Apply Now"}
+                                        </button>
+                                    </div>
                                 </div>
                             ))
                         )}
                     </div>
+                )}
+                
+                {/* The Deep Details Modal */}
+                {selectedJobId && (
+                    <JobDetailsModal 
+                        jobId={selectedJobId} 
+                        onClose={() => setSelectedJobId(null)}
+                        hasApplied={appliedJobs.has(selectedJobId)}
+                        onApply={handleApply}
+                    />
                 )}
             </div>
         </div>
