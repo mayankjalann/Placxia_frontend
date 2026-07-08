@@ -102,59 +102,64 @@ const PostJobModal = ({ isOpen, onClose, onJobPosted, editJob = null }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-            <div className="bg-slate-900 rounded-2xl border border-slate-700 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-zinc-950 rounded-[2rem] border border-white/10 w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
                 
-                <div className="p-6 border-b border-slate-800 flex justify-between items-center sticky top-0 bg-slate-900">
-                    <h2 className="text-2xl font-bold text-white">{editJob ? "Edit Job Posting" : "Post New Job"}</h2>
-                    <button onClick={onClose} className="text-slate-400 hover:text-white text-2xl">&times;</button>
+                <div className="p-8 border-b border-white/5 flex justify-between items-center bg-zinc-950">
+                    <h2 className="text-3xl font-bold text-white tracking-tight">{editJob ? "Edit Listing" : "Post New Listing"}</h2>
+                    <button onClick={onClose} className="text-zinc-500 hover:text-white text-3xl transition-colors">&times;</button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                    {error && <p className="text-red-500 bg-red-500/10 p-3 rounded">{error}</p>}
+                <form onSubmit={handleSubmit} className="p-8 space-y-8 overflow-y-auto">
+                    {error && <p className="text-red-400 bg-red-950/20 p-4 rounded-xl border border-red-900/30">{error}</p>}
 
-                    <div className="bg-slate-800/50 p-4 rounded-lg border border-indigo-500/30">
-                        <label className="block text-indigo-300 font-semibold mb-3">Target Colleges</label>
+                    <div className="bg-zinc-900/50 p-6 rounded-2xl border border-white/5">
+                        <label className="block text-white font-medium mb-4">Target Universities</label>
                         {loadingColleges ? (
-                            <p className="text-slate-400">Loading colleges...</p>
+                            <p className="text-zinc-500">Loading directory...</p>
                         ) : colleges.length === 0 ? (
-                            <p className="text-red-400 text-sm font-bold">You have not been approved for any colleges yet.</p>
+                            <p className="text-red-400 text-sm font-medium">You have not been approved for any universities.</p>
                         ) : (
-                            <div className="space-y-3 max-h-32 overflow-y-auto">
+                            <div className="space-y-4 max-h-40 overflow-y-auto pr-2">
                                 {colleges.map(college => (
-                                    <label key={college._id} className="flex items-center space-x-3 text-slate-300 cursor-pointer hover:text-white transition-colors">
+                                    <label key={college._id} className="flex items-center space-x-4 text-zinc-400 cursor-pointer hover:text-white transition-colors">
+                                        <div className={`w-5 h-5 rounded flex items-center justify-center border transition-colors ${formData.eligibleColleges.includes(college._id) ? 'bg-white border-white' : 'border-zinc-700 bg-zinc-900'}`}>
+                                            {formData.eligibleColleges.includes(college._id) && (
+                                                <svg className="w-3.5 h-3.5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/></svg>
+                                            )}
+                                        </div>
                                         <input 
                                             type="checkbox" 
                                             checked={formData.eligibleColleges.includes(college._id)}
                                             onChange={() => handleCheckboxChange(college._id)}
-                                            className="w-5 h-5 rounded border-slate-600 bg-slate-800 text-indigo-600 focus:ring-indigo-600"
+                                            className="hidden"
                                         />
-                                        <span>{college.name}</span>
+                                        <span className="font-medium">{college.name}</span>
                                     </label>
                                 ))}
                             </div>
                         )}
-                        <p className="text-xs text-slate-500 mt-3">Select one or more colleges for this job posting.</p>
+                        <p className="text-xs text-zinc-500 mt-4 uppercase tracking-widest">Select eligible institutions</p>
                     </div>
 
                     <div>
-                        <label className="block text-slate-300 mb-2">Job Title</label>
-                        <input type="text" name="title" required value={formData.title} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white" placeholder="e.g. Software Engineer" />
+                        <label className="block text-zinc-400 text-sm font-medium mb-2 uppercase tracking-widest">Role Title</label>
+                        <input type="text" name="title" required value={formData.title} onChange={handleChange} className="w-full bg-zinc-900 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white/30 transition-colors" placeholder="e.g. Structural Engineer" />
                     </div>
 
                     <div>
-                        <label className="block text-slate-300 mb-2">Description</label>
-                        <textarea name="description" required value={formData.description} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white h-32"></textarea>
+                        <label className="block text-zinc-400 text-sm font-medium mb-2 uppercase tracking-widest">Description</label>
+                        <textarea name="description" required value={formData.description} onChange={handleChange} className="w-full bg-zinc-900 border border-white/10 rounded-xl p-4 text-white h-32 focus:outline-none focus:border-white/30 transition-colors"></textarea>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-slate-300 mb-2">Positions Available</label>
-                            <input type="number" name="positionsAvailable" required value={formData.positionsAvailable} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white" min="1" />
+                            <label className="block text-zinc-400 text-sm font-medium mb-2 uppercase tracking-widest">Headcount</label>
+                            <input type="number" name="positionsAvailable" required value={formData.positionsAvailable} onChange={handleChange} className="w-full bg-zinc-900 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white/30 transition-colors" min="1" />
                         </div>
                         <div>
-                            <label className="block text-slate-300 mb-2">Job Type</label>
-                            <select name="jobType" required value={formData.jobType} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white">
+                            <label className="block text-zinc-400 text-sm font-medium mb-2 uppercase tracking-widest">Type</label>
+                            <select name="jobType" required value={formData.jobType} onChange={handleChange} className="w-full bg-zinc-900 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white/30 transition-colors">
                                 <option value="FULL_TIME">Full Time</option>
                                 <option value="INTERN">Internship</option>
                                 <option value="PPO">PPO</option>
@@ -162,28 +167,27 @@ const PostJobModal = ({ isOpen, onClose, onJobPosted, editJob = null }) => {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-slate-300 mb-2">Min CTC (₹)</label>
-                            <input type="number" name="ctcMin" value={formData.ctcMin} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white" />
+                            <label className="block text-zinc-400 text-sm font-medium mb-2 uppercase tracking-widest">Min Package</label>
+                            <input type="number" name="ctcMin" value={formData.ctcMin} onChange={handleChange} className="w-full bg-zinc-900 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white/30 transition-colors" />
                         </div>
                         <div>
-                            <label className="block text-slate-300 mb-2">Max CTC (₹)</label>
-                            <input type="number" name="ctcMax" value={formData.ctcMax} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white" />
+                            <label className="block text-zinc-400 text-sm font-medium mb-2 uppercase tracking-widest">Max Package</label>
+                            <input type="number" name="ctcMax" value={formData.ctcMax} onChange={handleChange} className="w-full bg-zinc-900 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white/30 transition-colors" />
                         </div>
                     </div>
 
                     <div>
-                        <label className="block text-slate-300 mb-2">Application Deadline</label>
-                        <input type="date" name="deadline" required value={formData.deadline} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white" />
+                        <label className="block text-zinc-400 text-sm font-medium mb-2 uppercase tracking-widest">Deadline</label>
+                        <input type="date" name="deadline" required value={formData.deadline} onChange={handleChange} className="w-full bg-zinc-900 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white/30 transition-colors [color-scheme:dark]" />
                     </div>
 
-                    <div className="pt-4 flex gap-4">
-                        <button type="button" onClick={onClose} className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-lg transition-colors">Cancel</button>
+                    <div className="pt-8 flex gap-4 border-t border-white/5">
+                        <button type="button" onClick={onClose} className="flex-1 py-4 bg-zinc-900 hover:bg-zinc-800 text-white font-medium rounded-full transition-colors">Cancel</button>
                         
-                        {/* Disable button if no colleges are checked! */}
-                        <button type="submit" disabled={loading || formData.eligibleColleges.length === 0} className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-colors disabled:opacity-50">
-                            {loading ? 'Saving...' : (editJob ? 'Update Job' : 'Save as Draft')}
+                        <button type="submit" disabled={loading || formData.eligibleColleges.length === 0} className="flex-[2] py-4 bg-white text-black hover:bg-zinc-200 font-medium rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            {loading ? 'Processing...' : (editJob ? 'Update Archive' : 'Save Draft')}
                         </button>
                     </div>
                 </form>

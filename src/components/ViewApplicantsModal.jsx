@@ -44,70 +44,73 @@ const ViewApplicantsModal = ({ isOpen, onClose, jobId }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-            <div className="bg-slate-900 rounded-2xl border border-slate-700 w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-zinc-950 rounded-[2rem] border border-white/10 w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
                 
                 {/* Header */}
-                <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900">
-                    <h2 className="text-2xl font-bold text-white">Review Applicants</h2>
-                    <button onClick={onClose} className="text-slate-400 hover:text-white text-3xl leading-none">&times;</button>
+                <div className="p-8 border-b border-white/5 flex justify-between items-center bg-zinc-950">
+                    <h2 className="text-3xl font-bold text-white tracking-tight">Candidates Archive</h2>
+                    <button onClick={onClose} className="text-zinc-500 hover:text-white text-3xl leading-none transition-colors">&times;</button>
                 </div>
 
                 {/* Body */}
-                <div className="p-6 overflow-y-auto flex-1">
-                    {loading && <p className="text-indigo-400 animate-pulse text-lg">Loading applicants...</p>}
-                    {error && <p className="text-red-500 bg-red-500/10 p-4 rounded-lg">{error}</p>}
+                <div className="p-8 overflow-y-auto flex-1 bg-black/20">
+                    {loading && <p className="text-zinc-500 text-lg">Indexing profiles...</p>}
+                    {error && <p className="text-red-400 bg-red-950/20 p-4 rounded-xl border border-red-900/30">{error}</p>}
                     
                     {!loading && !error && applicants.length === 0 && (
-                        <div className="text-center py-10">
-                            <p className="text-slate-400 text-lg">No students have applied to this job yet.</p>
+                        <div className="text-center py-20">
+                            <p className="text-zinc-500 text-lg font-medium">The archive is empty.</p>
                         </div>
                     )}
 
                     {!loading && applicants.length > 0 && (
-                        <div className="space-y-4">
+                        <div className="grid grid-cols-1 gap-6">
                             {applicants.map(app => (
-                                <div key={app._id} className="bg-slate-800 rounded-xl p-5 border border-slate-700 flex justify-between items-center hover:border-indigo-500/50 transition-colors">
+                                <div key={app._id} className="bg-zinc-900 rounded-2xl p-6 border border-white/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 hover:border-white/20 transition-colors">
                                     
                                     {/* Student Info */}
-                                    <div>
-                                        <h3 className="text-xl font-bold text-white flex items-center gap-3">
-                                            {app.student.name}
-                                            <span className={`text-xs px-2 py-1 rounded-full font-bold uppercase tracking-wider ${
-                                                app.status === 'SHORTLISTED' ? 'bg-green-500/20 text-green-400' :
-                                                app.status === 'REJECTED' ? 'bg-red-500/20 text-red-400' :
-                                                'bg-yellow-500/20 text-yellow-400'
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-4 mb-2">
+                                            <h3 className="text-2xl font-bold text-white tracking-tight">
+                                                {app.student.name}
+                                            </h3>
+                                            <span className={`text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-widest border ${
+                                                app.status === 'SHORTLISTED' ? 'border-green-500/50 text-green-400' :
+                                                app.status === 'REJECTED' ? 'border-red-500/50 text-red-400' :
+                                                'border-zinc-500/50 text-zinc-400'
                                             }`}>
                                                 {app.status}
                                             </span>
-                                        </h3>
-                                        <div className="text-slate-400 text-sm mt-2 flex gap-4">
-                                            <p>🎓 {app.student.branch} ({app.student.batch})</p>
-                                            <p>⭐ CGPA: {app.student.cgpa}</p>
+                                        </div>
+                                        <div className="text-zinc-400 text-sm flex gap-4 font-medium uppercase tracking-widest">
+                                            <p>{app.student.branch} ({app.student.batch})</p>
+                                            <p>•</p>
+                                            <p>CGPA: {app.student.cgpa}</p>
                                         </div>
                                     </div>
 
                                     {/* Action Buttons */}
-                                    <div className="flex gap-3">
+                                    <div className="flex flex-wrap gap-3 w-full md:w-auto">
                                         {app.student.resumeUrl ? (
-                                            <a href={app.student.resumeUrl} target="_blank" rel="noreferrer" className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-lg transition-colors flex items-center">
-                                                View Resume
+                                            <a href={app.student.resumeUrl} target="_blank" rel="noreferrer" className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-medium rounded-full transition-colors flex-1 md:flex-none text-center">
+                                                Resume
                                             </a>
                                         ) : (
-                                            <button disabled className="px-4 py-2 bg-slate-700/50 text-slate-500 font-semibold rounded-lg cursor-not-allowed">
+                                            <button disabled className="px-6 py-3 bg-zinc-900 text-zinc-600 text-sm font-medium rounded-full cursor-not-allowed border border-white/5 flex-1 md:flex-none">
                                                 No Resume
                                             </button>
                                         )}
                                         
                                         <button 
                                             onClick={() => handleUpdateStatus(app._id, 'SHORTLISTED')}
-                                            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors"
+                                            className="px-6 py-3 bg-white hover:bg-zinc-200 text-black text-sm font-medium rounded-full transition-colors flex-1 md:flex-none"
                                         >
                                             Shortlist
                                         </button>
                                         <button 
                                             onClick={() => handleUpdateStatus(app._id, 'REJECTED')}
-                                            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors"
+                                            className="px-6 py-3 bg-red-950 hover:bg-red-900 text-red-400 text-sm font-medium rounded-full transition-colors border border-red-900/50 flex-1 md:flex-none"
                                         >
                                             Reject
                                         </button>

@@ -33,7 +33,7 @@ function Layout() {
     }
 
     return (
-        <div className="w-full min-h-screen bg-[#0B0F19] bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-900/20 via-[#0B0F19] to-[#0B0F19] text-white flex flex-col selection:bg-indigo-500/30">
+        <div className="w-full min-h-screen bg-black text-white flex flex-col selection:bg-white/20 antialiased overflow-x-hidden">
             <Navbar />
             <div className="flex-1 overflow-auto">
                 <Outlet />

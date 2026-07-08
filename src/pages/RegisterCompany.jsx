@@ -58,86 +58,85 @@ const RegisterCompany = () => {
     };
 
     return (
-        <div className="flex-1 flex items-center justify-center p-8 relative h-full">
-            {/* Ambient Background Orbs */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl -z-10"></div>
+        <div className="flex-1 flex items-center justify-center p-8 relative min-h-[90vh]">
             
-            <div className="w-full max-w-2xl bg-white/[0.02] backdrop-blur-xl rounded-3xl p-10 shadow-2xl border border-white/[0.05] relative overflow-hidden my-8">
-                <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent"></div>
+            <div className="w-full max-w-2xl bg-zinc-950 rounded-[2rem] p-10 border border-white/10 relative overflow-hidden my-8">
                 
-                <div className="flex justify-center mb-6">
-                    <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center font-black text-white text-3xl shadow-[0_0_30px_-5px_rgba(168,85,247,0.5)] border border-white/20">
-                        C
+                <div className="flex justify-center mb-10">
+                    <div className="flex items-center gap-2 group cursor-pointer" onClick={() => navigate('/')}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="currentColor" viewBox="0 0 256 256" className="w-10 h-10 text-white group-hover:rotate-12 transition-transform duration-500">
+                            <path d="M138.54,149.46C106.62,96.25,149.18,43.05,239.63,48.37,245,138.82,191.75,181.39,138.54,149.46ZM16.26,88.26c-3.8,64.61,34.21,95,72.21,72.21C111.27,122.47,80.87,84.46,16.26,88.26Z" opacity="0.2"></path>
+                            <path d="M247.63,47.89a8,8,0,0,0-7.52-7.52c-51.76-3-93.32,12.74-111.18,42.22-11.8,19.48-11.78,43.16-.16,65.74a71.37,71.37,0,0,0-14.17,26.95L98.33,159c7.82-16.33,7.52-33.36-1-47.49C84.09,89.73,53.62,78,15.79,80.27a8,8,0,0,0-7.52,7.52c-2.23,37.83,9.46,68.3,31.25,81.5A45.82,45.82,0,0,0,63.44,176,54.58,54.58,0,0,0,87,170.33l25,25V224a8,8,0,0,0,16,0V194.51a55.61,55.61,0,0,1,12.27-35,73.91,73.91,0,0,0,33.31,8.4,60.9,60.9,0,0,0,31.83-8.86C234.89,141.21,250.67,99.65,247.63,47.89ZM86.06,146.74l-24.41-24.4a8,8,0,0,0-11.31,11.31l24.41,24.41c-9.61,3.18-18.93,2.39-26.94-2.46C32.47,146.31,23.79,124.32,24,96c28.31-.25,50.31,8.47,59.6,23.81C88.45,127.82,89.24,137.14,86.06,146.74Zm111.06-1.36c-13.4,8.11-29.15,8.73-45.15,2l53.69-53.7a8,8,0,0,0-11.31-11.32L140.65,136c-6.76-16-6.15-31.76,2-45.15,13.94-23,47-35.8,89.33-34.83C232.94,98.34,220.14,131.44,197.12,145.38Z"></path>
+                        </svg>
                     </div>
                 </div>
 
-                <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 text-center mb-2 tracking-tight">Company Registration</h1>
-                <p className="text-slate-400 text-center mb-8 font-medium">Partner with top colleges to hire their best students.</p>
+                <h1 className="text-3xl font-bold text-white text-center mb-2 tracking-tight">Partner Application</h1>
+                <p className="text-zinc-500 text-center mb-8 font-medium">Connect your brand with elite institutions.</p>
                 
                 {error && (
-                    <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3">
-                        <svg className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
+                    <div className="mb-6 p-4 bg-red-950/20 border border-red-900/30 rounded-xl flex items-start gap-3">
                         <p className="text-red-400 text-sm font-medium">{error}</p>
                     </div>
                 )}
                 
                 {success ? (
-                    <div className="p-8 bg-green-500/10 border border-green-500/30 rounded-2xl text-center">
-                        <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-500/30">
-                            <svg className="w-8 h-8 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                    <div className="p-8 bg-zinc-900 border border-white/10 rounded-2xl text-center">
+                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 border border-white/10">
+                            <svg className="w-8 h-8 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
                         </div>
-                        <h2 className="text-2xl font-black text-green-400 mb-2">Application Submitted!</h2>
-                        <p className="text-green-200 font-medium">Your request has been sent to the college admins for approval. You will be redirected to Login...</p>
+                        <h2 className="text-2xl font-bold text-white mb-2">Application Submitted</h2>
+                        <p className="text-zinc-400 font-medium text-sm">Your request has been forwarded to the administrative boards. Redirecting to access portal...</p>
                     </div>
                 ) : (
                     <form onSubmit={handleRegister} className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">Company Name</label>
-                                <input type="text" name="name" required onChange={handleChange} className="w-full px-5 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all shadow-inner" />
+                                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-widest block">Company Name</label>
+                                <input type="text" name="name" required onChange={handleChange} className="w-full px-5 py-4 bg-zinc-900 border border-white/10 rounded-xl text-white focus:outline-none focus:border-white/30 transition-all" />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">Industry Focus</label>
-                                <input type="text" name="industry" required onChange={handleChange} placeholder="e.g. Technology" className="w-full px-5 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all shadow-inner" />
+                                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-widest block">Industry Sector</label>
+                                <input type="text" name="industry" required onChange={handleChange} placeholder="e.g. Technology" className="w-full px-5 py-4 bg-zinc-900 border border-white/10 rounded-xl text-white focus:outline-none focus:border-white/30 transition-all" />
                             </div>
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">Email (Login ID)</label>
-                                <input type="email" name="email" required onChange={handleChange} className="w-full px-5 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all shadow-inner" />
+                                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-widest block">Corporate Email</label>
+                                <input type="email" name="email" required onChange={handleChange} className="w-full px-5 py-4 bg-zinc-900 border border-white/10 rounded-xl text-white focus:outline-none focus:border-white/30 transition-all" />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">Password</label>
-                                <input type="password" name="password" required onChange={handleChange} className="w-full px-5 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all shadow-inner" />
+                                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-widest block">Password</label>
+                                <input type="password" name="password" required onChange={handleChange} className="w-full px-5 py-4 bg-zinc-900 border border-white/10 rounded-xl text-white focus:outline-none focus:border-white/30 transition-all" />
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">Company Website URL</label>
-                            <input type="text" name="website" required onChange={handleChange} className="w-full px-5 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all shadow-inner" />
+                            <label className="text-xs font-semibold text-zinc-400 uppercase tracking-widest block">Corporate Website</label>
+                            <input type="text" name="website" required onChange={handleChange} className="w-full px-5 py-4 bg-zinc-900 border border-white/10 rounded-xl text-white focus:outline-none focus:border-white/30 transition-all" />
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">Company Description</label>
-                            <textarea name="description" required onChange={handleChange} className="w-full px-5 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all shadow-inner h-24 resize-none"></textarea>
+                            <label className="text-xs font-semibold text-zinc-400 uppercase tracking-widest block">Company Synopsis</label>
+                            <textarea name="description" required onChange={handleChange} className="w-full px-5 py-4 bg-zinc-900 border border-white/10 rounded-xl text-white focus:outline-none focus:border-white/30 transition-all h-32 resize-none"></textarea>
                         </div>
 
-                        <div className="bg-white/5 p-6 rounded-2xl border border-white/10 shadow-inner">
-                            <label className="block text-sm font-bold text-indigo-300 mb-4 flex items-center gap-2">
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                                Request Partnership with Colleges:
-                            </label>
-                            <div className="space-y-3 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                        <div className="bg-zinc-900/50 p-6 rounded-2xl border border-white/5">
+                            <label className="block text-white font-medium mb-4">Request Affiliation</label>
+                            <div className="space-y-4 max-h-40 overflow-y-auto pr-2">
                                 {collegesList.map((col) => (
-                                    <label key={col._id} className="flex items-center space-x-3 text-slate-300 cursor-pointer hover:text-white transition-colors group p-2 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/10">
+                                    <label key={col._id} className="flex items-center space-x-4 text-zinc-400 cursor-pointer hover:text-white transition-colors">
+                                        <div className={`w-5 h-5 rounded flex items-center justify-center border transition-colors ${formData.requestedColleges.includes(col._id) ? 'bg-white border-white' : 'border-zinc-700 bg-zinc-900'}`}>
+                                            {formData.requestedColleges.includes(col._id) && (
+                                                <svg className="w-3.5 h-3.5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/></svg>
+                                            )}
+                                        </div>
                                         <input 
                                             type="checkbox" 
                                             checked={formData.requestedColleges.includes(col._id)}
                                             onChange={() => handleCheckboxChange(col._id)}
-                                            className="w-5 h-5 rounded bg-white/10 border-white/20 text-purple-600 focus:ring-purple-600 focus:ring-offset-slate-900 transition-all"
+                                            className="hidden"
                                         />
                                         <span className="font-medium">{col.name}</span>
                                     </label>
@@ -145,9 +144,8 @@ const RegisterCompany = () => {
                             </div>
                         </div>
 
-                        <button type="submit" className="group w-full py-4 mt-8 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold rounded-xl transition-all duration-300 shadow-[0_0_20px_-5px_rgba(168,85,247,0.4)] hover:shadow-[0_0_30px_-5px_rgba(168,85,247,0.6)] flex items-center justify-center gap-2">
+                        <button type="submit" className="w-full py-4 mt-8 bg-white hover:bg-zinc-200 text-black font-medium rounded-full transition-colors flex items-center justify-center gap-2">
                             Submit Application
-                            <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
                         </button>
                     </form>
                 )}

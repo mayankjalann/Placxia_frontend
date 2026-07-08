@@ -83,50 +83,53 @@ const ProfileModal = ({ isOpen, onClose, userData }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl p-8 relative shadow-2xl">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50">
+            <div className="bg-zinc-950 border border-white/10 rounded-[2rem] w-full max-w-2xl p-10 relative shadow-2xl">
                 
-                <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white bg-slate-800 p-2 rounded-full transition-colors">✕</button>
+                <button onClick={onClose} className="absolute top-6 right-6 text-zinc-500 hover:text-white bg-zinc-900 hover:bg-zinc-800 w-10 h-10 rounded-full flex items-center justify-center transition-all">✕</button>
 
-                <h2 className="text-3xl font-black text-white mb-6 border-b border-slate-700 pb-4">
+                <h2 className="text-3xl font-bold text-white mb-8 tracking-tight">
                     Edit Profile
                 </h2>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-6">
                     
                     {/* STUDENT INPUTS */}
                     {isStudent && (
                         <>
                             <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1">CGPA</label>
+                                <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-2">CGPA</label>
                                 <input 
                                     type="number" step="0.01" max="10" name="cgpa" 
                                     value={formData.cgpa} onChange={handleChange} 
-                                    className="w-full px-4 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white" 
+                                    className="w-full px-5 py-4 bg-zinc-900 border border-white/10 rounded-xl text-white focus:outline-none focus:border-white/30 transition-all" 
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1">Skills (comma separated)</label>
+                                <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-2">Skills (comma separated)</label>
                                 <input 
                                     type="text" name="skills" 
                                     value={formData.skills} onChange={handleChange} 
                                     placeholder="React, Node.js, AWS"
-                                    className="w-full px-4 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white" 
+                                    className="w-full px-5 py-4 bg-zinc-900 border border-white/10 rounded-xl text-white focus:outline-none focus:border-white/30 transition-all" 
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1">LinkedIn URL</label>
+                                <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-2">LinkedIn URL</label>
                                 <input 
                                     type="url" name="linkedinUrl" 
                                     value={formData.linkedinUrl} onChange={handleChange} 
-                                    className="w-full px-4 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white" 
+                                    className="w-full px-5 py-4 bg-zinc-900 border border-white/10 rounded-xl text-white focus:outline-none focus:border-white/30 transition-all" 
                                 />
                             </div>
-                            <div className="p-4 bg-slate-800 rounded-xl border border-slate-700 mt-4">
-                                <label className="block text-sm font-medium text-slate-300 mb-2">Upload Resume (PDF)</label>
-                                <input type="file" accept=".pdf" onChange={(e) => setFile(e.target.files[0])} className="text-slate-400 block w-full file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer"/>
+                            <div className="p-6 bg-zinc-900/50 rounded-2xl border border-white/5 mt-4">
+                                <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-4">Upload Resume (PDF)</label>
+                                <input type="file" accept=".pdf" onChange={(e) => setFile(e.target.files[0])} className="text-zinc-400 block w-full file:mr-4 file:py-3 file:px-6 file:rounded-full file:border-0 file:text-sm file:font-medium file:bg-white file:text-black hover:file:bg-zinc-200 cursor-pointer transition-colors"/>
                                 {userData.studentProfile?.resumeUrl && !file && (
-                                    <p className="text-xs text-green-400 mt-2">✓ Resume is already uploaded on Cloudinary.</p>
+                                    <p className="text-xs text-zinc-400 mt-4 flex items-center gap-2">
+                                        <svg className="w-4 h-4 text-black bg-white rounded-full p-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/></svg>
+                                        Resume is already uploaded.
+                                    </p>
                                 )}
                             </div>
                         </>
@@ -136,37 +139,42 @@ const ProfileModal = ({ isOpen, onClose, userData }) => {
                     {isCompany && (
                         <>
                             <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1">Company Website</label>
+                                <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-2">Company Website</label>
                                 <input 
                                     type="url" name="website" 
                                     value={formData.website} onChange={handleChange} 
-                                    className="w-full px-4 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white" 
+                                    className="w-full px-5 py-4 bg-zinc-900 border border-white/10 rounded-xl text-white focus:outline-none focus:border-white/30 transition-all" 
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1">Company Description</label>
+                                <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-2">Company Description</label>
                                 <textarea 
                                     rows="4" name="description" 
                                     value={formData.description} onChange={handleChange} 
-                                    className="w-full px-4 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white resize-none" 
+                                    className="w-full px-5 py-4 bg-zinc-900 border border-white/10 rounded-xl text-white focus:outline-none focus:border-white/30 transition-all resize-none" 
                                 />
                             </div>
-                            <div className="p-4 bg-slate-800 rounded-xl border border-slate-700 mt-4">
-                                <label className="block text-sm font-medium text-slate-300 mb-2">Upload Company Logo (Image)</label>
-                                <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files[0])} className="text-slate-400 block w-full file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer"/>
+                            <div className="p-6 bg-zinc-900/50 rounded-2xl border border-white/5 mt-4">
+                                <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-4">Upload Company Logo (Image)</label>
+                                <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files[0])} className="text-zinc-400 block w-full file:mr-4 file:py-3 file:px-6 file:rounded-full file:border-0 file:text-sm file:font-medium file:bg-white file:text-black hover:file:bg-zinc-200 cursor-pointer transition-colors"/>
                                 {userData.companyProfile?.logoUrl && !file && (
-                                    <div className="mt-4 flex items-center gap-4">
-                                        <img src={userData.companyProfile.logoUrl} alt="Logo" className="w-12 h-12 rounded bg-white p-1" />
-                                        <p className="text-xs text-green-400">✓ Logo is uploaded on Cloudinary.</p>
+                                    <div className="mt-4 flex items-center gap-4 bg-zinc-900 p-4 rounded-xl border border-white/5">
+                                        <img src={userData.companyProfile.logoUrl} alt="Logo" className="w-12 h-12 rounded-lg bg-white p-2 object-contain" />
+                                        <p className="text-xs text-zinc-400 flex items-center gap-2">
+                                            <svg className="w-4 h-4 text-black bg-white rounded-full p-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/></svg>
+                                            Logo is already uploaded.
+                                        </p>
                                     </div>
                                 )}
                             </div>
                         </>
                     )}
 
-                    <button type="submit" disabled={loading} className="mt-6 px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg w-full transition-colors shadow-lg shadow-indigo-600/30 disabled:opacity-50">
-                        {loading ? "Saving to Cloudinary..." : "Save Profile"}
-                    </button>
+                    <div className="pt-4">
+                        <button type="submit" disabled={loading} className="py-4 bg-white hover:bg-zinc-200 text-black font-medium rounded-full w-full transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                            {loading ? "Processing..." : "Save Changes"}
+                        </button>
+                    </div>
                 </form>
 
             </div>
