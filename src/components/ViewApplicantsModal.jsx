@@ -76,8 +76,9 @@ const ViewApplicantsModal = ({ isOpen, onClose, jobId }) => {
                                                 {app.student.name}
                                             </h3>
                                             <span className={`text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-widest border ${
-                                                app.status === 'SHORTLISTED' ? 'border-green-500/50 text-green-400' :
-                                                app.status === 'REJECTED' ? 'border-red-500/50 text-red-400' :
+                                                app.status === 'SELECTED' ? 'border-green-500/50 text-green-400 bg-green-950/30' :
+                                                app.status === 'SHORTLISTED' ? 'border-yellow-500/50 text-yellow-400 bg-yellow-950/30' :
+                                                app.status === 'REJECTED' ? 'border-red-500/50 text-red-400 bg-red-950/30' :
                                                 'border-zinc-500/50 text-zinc-400'
                                             }`}>
                                                 {app.status}
@@ -104,13 +105,19 @@ const ViewApplicantsModal = ({ isOpen, onClose, jobId }) => {
                                         
                                         <button 
                                             onClick={() => handleUpdateStatus(app._id, 'SHORTLISTED')}
-                                            className="px-6 py-3 bg-white hover:bg-zinc-200 text-black text-sm font-medium rounded-full transition-colors flex-1 md:flex-none"
+                                            className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-medium rounded-full transition-colors flex-1 md:flex-none"
                                         >
                                             Shortlist
                                         </button>
                                         <button 
+                                            onClick={() => handleUpdateStatus(app._id, 'SELECTED')}
+                                            className="px-6 py-3 bg-white hover:bg-zinc-200 text-black text-sm font-bold rounded-full transition-colors flex-1 md:flex-none shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+                                        >
+                                            Hire / Select
+                                        </button>
+                                        <button 
                                             onClick={() => handleUpdateStatus(app._id, 'REJECTED')}
-                                            className="px-6 py-3 bg-red-950 hover:bg-red-900 text-red-400 text-sm font-medium rounded-full transition-colors border border-red-900/50 flex-1 md:flex-none"
+                                            className="px-6 py-3 bg-red-950/50 hover:bg-red-900 text-red-400 text-sm font-medium rounded-full transition-colors border border-red-900/30 flex-1 md:flex-none"
                                         >
                                             Reject
                                         </button>

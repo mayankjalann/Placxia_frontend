@@ -14,6 +14,7 @@ const StudentDash = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [appliedJobs, setAppliedJobs] = useState(new Set());
+    const [myApplications, setMyApplications] = useState([]);
     const [selectedJobId, setSelectedJobId] = useState(null);
 
     useEffect(() => {
@@ -26,7 +27,11 @@ const StudentDash = () => {
                 
                 setJobs(jobsRes.data.data);
                 
-                const appliedIds = new Set(appsRes.data.data.map(app => app.job));
+                const myApps = appsRes.data.data;
+                setMyApplications(myApps);
+
+                // app.job is now populated, so we must extract app.job._id
+                const appliedIds = new Set(myApps.map(app => app.job?._id || app.job));
                 setAppliedJobs(appliedIds);
                 
                 setLoading(false);
@@ -128,6 +133,32 @@ const StudentDash = () => {
                 <div className="flex justify-between items-end mb-8">
                     <h2 className="text-3xl md:text-4xl font-bold tracking-tight">The Network.</h2>
                 </div>
+
+                {/* --- MY APPLICATIONS TRACKER --- */}
+                {myApplications.length > 0 && (
+                    <div className="mb-16">
+                        <h3 className="text-xl font-bold tracking-tight mb-6 text-white/80 border-b border-white/10 pb-4">My Applications</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {myApplications.map((app) => (
+                                <div key={app._id} className="bg-zinc-900 border border-white/5 rounded-2xl p-6 flex justify-between items-center hover:border-white/20 transition-colors">
+                                    <div>
+                                        <h3 className="text-xl font-bold text-white mb-1">{app.job?.title}</h3>
+                                        <p className="text-sm text-zinc-400 font-medium uppercase tracking-widest">{app.job?.company?.name || 'Unknown Company'}</p>
+                                    </div>
+                                    <span className={`text-[10px] px-4 py-2 rounded-full font-bold uppercase tracking-widest border ${
+                                        app.status === 'SELECTED' ? 'border-green-500/50 text-green-400 bg-green-950/30' :
+                                        app.status === 'SHORTLISTED' ? 'border-yellow-500/50 text-yellow-400 bg-yellow-950/30' :
+                                        app.status === 'REJECTED' ? 'border-red-500/50 text-red-400 bg-red-950/30' :
+                                        'border-zinc-500/50 text-zinc-400 bg-zinc-900' 
+                                    }`}>
+                                        {app.status}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+                {/* ------------------------------- */}
 
                 {loading && <p className="text-zinc-500 animate-pulse text-lg">Indexing network...</p>}
                 {error && <p className="text-red-400 p-4 bg-red-950/20 border border-red-900/30 rounded-xl">{error}</p>}
