@@ -19,7 +19,7 @@ const CompanyDash = () => {
 
     const fetchCompanyJobs = async () => {
         try {
-            const response = await axios.get('http://localhost:8000/api/v1/job/getCompanyJobs', {
+            const response = await axios.get('https://placxia.vercel.app/api/v1/job/getCompanyJobs', {
                 withCredentials: true 
             });
             setJobs(response.data.data);
@@ -32,7 +32,7 @@ const CompanyDash = () => {
 
     const handlePublish = async (jobId) => {
         try {
-            await axios.patch(`http://localhost:8000/api/v1/job/publish/${jobId}`, {}, { withCredentials: true });
+            await axios.patch(`https://placxia.vercel.app/api/v1/job/publish/${jobId}`, {}, { withCredentials: true });
             fetchCompanyJobs();
         } catch (err) {
             alert(err.response?.data?.message || "Failed to publish job");

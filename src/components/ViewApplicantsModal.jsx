@@ -11,7 +11,7 @@ const ViewApplicantsModal = ({ isOpen, onClose, jobId }) => {
             const fetchApplicants = async () => {
                 setLoading(true);
                 try {
-                    const response = await axios.get(`http://localhost:8000/api/v1/application/getJobApplicants/${jobId}`, {
+                    const response = await axios.get(`https://placxia.vercel.app/api/v1/application/getJobApplicants/${jobId}`, {
                         withCredentials: true
                     });
                     setApplicants(response.data.data);
@@ -27,7 +27,7 @@ const ViewApplicantsModal = ({ isOpen, onClose, jobId }) => {
 
     const handleUpdateStatus = async (applicationId, newStatus) => {
         try {
-            await axios.patch(`http://localhost:8000/api/v1/application/updateApplicationStatus/${applicationId}`, 
+            await axios.patch(`https://placxia.vercel.app/api/v1/application/updateApplicationStatus/${applicationId}`, 
             { status: newStatus }, 
             { withCredentials: true }
             );

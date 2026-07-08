@@ -45,7 +45,7 @@ const PostJobModal = ({ isOpen, onClose, onJobPosted, editJob = null }) => {
 
             const fetchColleges = async () => {
                 try {
-                    const response = await axios.get('http://localhost:8000/api/v1/auth/colleges');
+                    const response = await axios.get('https://placxia.vercel.app/api/v1/auth/colleges');
                     const allColleges = response.data.data;
                     const approvedCollegeIds = userData?.companyProfile?.approvedColleges || [];
                     const approvedList = allColleges.filter(c => approvedCollegeIds.includes(c._id));
@@ -83,10 +83,10 @@ const PostJobModal = ({ isOpen, onClose, onJobPosted, editJob = null }) => {
         try {
             // We can just send formData directly now because eligibleColleges is natively an Array!
             if (editJob) {
-                await axios.patch(`http://localhost:8000/api/v1/job/update/${editJob._id}`, formData, { withCredentials: true });
+                await axios.patch(`https://placxia.vercel.app/api/v1/job/update/${editJob._id}`, formData, { withCredentials: true });
                 alert("Job Updated Successfully!");
             } else {
-                await axios.post('http://localhost:8000/api/v1/job/create', formData, { withCredentials: true });
+                await axios.post('https://placxia.vercel.app/api/v1/job/create', formData, { withCredentials: true });
                 alert("Job saved as DRAFT successfully!");
             }
             

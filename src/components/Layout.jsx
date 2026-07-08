@@ -11,7 +11,7 @@ function Layout() {
 
     useEffect(() => {
         // Automatically fetch the user when they refresh the page!
-        axios.get('http://localhost:8000/api/v1/auth/current-user', { withCredentials: true })
+        axios.get('https://placxia.vercel.app/api/v1/auth/current-user', { withCredentials: true })
         .then((response) => {
             dispatch(login({ userData: response.data.data }));
         })
