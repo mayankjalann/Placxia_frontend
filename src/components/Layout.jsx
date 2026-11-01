@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import Navbar from "./Navbar";
 import { useDispatch } from "react-redux";
 import { login, logout } from "../store/authSlice";
@@ -8,12 +8,23 @@ import axios from "axios";
 function Layout() {
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const location = useLocation();
     const [loading, setLoading] = useState(true);
     const [sessionError, setSessionError] = useState('');
     const [retryCount, setRetryCount] = useState(0);
 
     useEffect(() => {
         let active = true;
+        const isProtectedRoute = location.pathname === '/dashboard' || location.pathname.startsWith('/profile');
+
+        // Public pages must not probe the session: on a fresh visit that always
+        // returns 401 and can race with a successful sign-in.
+        if (!isProtectedRoute) {
+            setLoading(false);
+            setSessionError('');
+            return () => { active = false; };
+        }
+
         const handleExpiredSession = () => {
             dispatch(logout());
             navigate('/login', { replace: true });
@@ -43,7 +54,7 @@ function Layout() {
             active = false;
             window.removeEventListener('placxia:session-expired', handleExpiredSession);
         };
-    }, [dispatch, navigate, retryCount]);
+    }, [dispatch, navigate, retryCount, location.pathname]);
 
     if (loading) {
         return (
