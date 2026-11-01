@@ -65,8 +65,18 @@ const RegisterCompany = () => {
             setSuccess(true);
             setTimeout(() => navigate('/login'), 4000);
         } catch (err) {
-            setError(err.response?.data?.message || 'Registration failed. Please check your connection and try again.');
-            setExistingAccount(err.response?.status === 409);
+            const status = err.response?.status;
+            const responseMessage = err.response?.data?.message;
+
+            if (status === 409) {
+                setError(responseMessage || 'An account with this email already exists. Sign in to check your company application status.');
+                setExistingAccount(true);
+            } else {
+                setError(responseMessage || (err.response
+                    ? 'Registration could not be completed. Please review your details and try again.'
+                    : 'Could not reach the registration service. Check your connection and try again.'));
+                setExistingAccount(false);
+            }
         } finally {
             setSubmitting(false);
         }
