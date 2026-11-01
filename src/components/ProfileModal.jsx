@@ -50,7 +50,7 @@ const ProfileModal = ({ isOpen, onClose, userData }) => {
             let url = '';
 
             if (isStudent) {
-                url = 'https://placxia.vercel.app/api/v1/auth/update-student';
+                url = '/api/v1/auth/update-student';
                 if (formData.cgpa) submitData.append('cgpa', formData.cgpa);
                 if (formData.linkedinUrl) submitData.append('linkedinUrl', formData.linkedinUrl);
                 
@@ -64,7 +64,7 @@ const ProfileModal = ({ isOpen, onClose, userData }) => {
                 if (file) submitData.append('resume', file); // 'resume' matches backend multer
             } 
             else if (isCompany) {
-                url = 'https://placxia.vercel.app/api/v1/auth/update-company';
+                url = '/api/v1/auth/update-company';
                 if (formData.website) submitData.append('website', formData.website);
                 if (formData.description) submitData.append('description', formData.description);
                 if (file) submitData.append('logo', file); // 'logo' matches backend multer
@@ -78,7 +78,7 @@ const ProfileModal = ({ isOpen, onClose, userData }) => {
             alert("Profile updated successfully!");
 
             // Refresh Redux Data!
-            const userResponse = await axios.get('https://placxia.vercel.app/api/v1/auth/current-user', {
+            const userResponse = await axios.get('/api/v1/auth/current-user', {
                 withCredentials: true
             });
             const updatedUserData = userResponse.data.data;

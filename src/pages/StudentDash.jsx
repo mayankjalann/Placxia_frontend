@@ -25,9 +25,9 @@ const StudentDash = () => {
         const fetchDashboardData = async () => {
             try {
                 const [jobsRes, appsRes, offersRes] = await Promise.all([
-                    axios.get('https://placxia.vercel.app/api/v1/job/getAllOpenJobs', { withCredentials: true }),
-                    axios.get('https://placxia.vercel.app/api/v1/application/getMyApplications', { withCredentials: true }),
-                    axios.get('https://placxia.vercel.app/api/v1/offer/getStudentOffers', { withCredentials: true })
+                    axios.get('/api/v1/job/getAllOpenJobs', { withCredentials: true }),
+                    axios.get('/api/v1/application/getMyApplications', { withCredentials: true }),
+                    axios.get('/api/v1/offer/getStudentOffers', { withCredentials: true })
                 ]);
                 
                 setJobs(jobsRes.data.data);
@@ -78,7 +78,7 @@ const StudentDash = () => {
 
     const handleApply = async (jobId) => {
         try {
-            await axios.post(`https://placxia.vercel.app/api/v1/application/applyForJob/${jobId}`, {}, { withCredentials: true });
+            await axios.post(`/api/v1/application/applyForJob/${jobId}`, {}, { withCredentials: true });
             setAppliedJobs(prev => new Set(prev).add(jobId)); 
             alert("Application registered.");
         } catch (err) {
@@ -94,7 +94,7 @@ const StudentDash = () => {
         setRespondingToOffer(offerId);
         try {
             const response = await axios.patch(
-                `https://placxia.vercel.app/api/v1/offer/respondToOffer/${offerId}`,
+                `/api/v1/offer/respondToOffer/${offerId}`,
                 { status },
                 { withCredentials: true }
             );

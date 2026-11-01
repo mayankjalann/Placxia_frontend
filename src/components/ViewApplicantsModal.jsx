@@ -17,12 +17,12 @@ const ViewApplicantsModal = ({ isOpen, onClose, jobId }) => {
                 setError('');
                 setOfferError('');
                 try {
-                    const response = await axios.get(`https://placxia.vercel.app/api/v1/application/getJobApplicants/${jobId}`, {
+                    const response = await axios.get(`/api/v1/application/getJobApplicants/${jobId}`, {
                         withCredentials: true
                     });
                     setApplicants(response.data.data);
                     try {
-                        const offersResponse = await axios.get('https://placxia.vercel.app/api/v1/offer/getCompanyOffers', {
+                        const offersResponse = await axios.get('/api/v1/offer/getCompanyOffers', {
                             withCredentials: true
                         });
                         setOffersByApplication(Object.fromEntries(
@@ -43,7 +43,7 @@ const ViewApplicantsModal = ({ isOpen, onClose, jobId }) => {
 
     const handleUpdateStatus = async (applicationId, newStatus) => {
         try {
-            await axios.patch(`https://placxia.vercel.app/api/v1/application/updateApplicationStatus/${applicationId}`, 
+            await axios.patch(`/api/v1/application/updateApplicationStatus/${applicationId}`,
             { status: newStatus }, 
             { withCredentials: true }
             );
@@ -75,7 +75,7 @@ const ViewApplicantsModal = ({ isOpen, onClose, jobId }) => {
         setOfferError('');
         try {
             const response = await axios.post(
-                `https://placxia.vercel.app/api/v1/offer/createOffer/${applicationId}`,
+                `/api/v1/offer/createOffer/${applicationId}`,
                 { offeredCtc: Number(draft.offeredCtc), joiningDate: draft.joiningDate || undefined },
                 { withCredentials: true }
             );

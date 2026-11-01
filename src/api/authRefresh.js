@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://placxia.vercel.app/api/v1';
+const API_BASE_URL = '/api/v1';
 const REFRESH_URL = `${API_BASE_URL}/auth/refresh-token`;
 let refreshPromise = null;
 

@@ -16,7 +16,7 @@ const Login = () => {
         setError('');
 
         try{
-            const response = await axios.post('https://placxia.vercel.app/api/v1/auth/login', 
+            const response = await axios.post('/api/v1/auth/login',
                 { email, password },
                 { withCredentials: true } 
             );

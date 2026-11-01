@@ -12,7 +12,7 @@ const JobDetailsModal = ({ jobId, onClose, hasApplied, onApply }) => {
             setError('');
             setJobDetails(null);
             try {
-                const response = await axios.get(`https://placxia.vercel.app/api/v1/job/getJobById/${jobId}`, {
+                const response = await axios.get(`/api/v1/job/getJobById/${jobId}`, {
                     withCredentials: true
                 });
                 setJobDetails(response.data.data);

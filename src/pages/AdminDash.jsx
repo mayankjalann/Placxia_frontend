@@ -17,7 +17,7 @@ const AdminDash = () => {
 
     const fetchPendingCompanies = async () => {
         try {
-            const response = await axios.get('https://placxia.vercel.app/api/v1/admin/getUnapprovedCompanies', {
+            const response = await axios.get('/api/v1/admin/getUnapprovedCompanies', {
                 withCredentials: true 
             });
             setCompanies(response.data.data);
@@ -30,7 +30,7 @@ const AdminDash = () => {
 
     const handleApprove = async (companyId) => {
         try {
-            await axios.patch(`https://placxia.vercel.app/api/v1/admin/approveCompany/${companyId}`, 
+            await axios.patch(`/api/v1/admin/approveCompany/${companyId}`,
             {}, 
             { withCredentials: true }
             );
@@ -44,7 +44,7 @@ const AdminDash = () => {
     const handleAddStudent = async (e) => {
         e.preventDefault();
         try {
-            await axios.post('https://placxia.vercel.app/api/v1/admin/addAllowedStudent', 
+            await axios.post('/api/v1/admin/addAllowedStudent',
                 { 
                     email: studentEmail, 
                     rollNo: studentRollNo,

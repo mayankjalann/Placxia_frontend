@@ -18,7 +18,7 @@ const RegisterCompany = () => {
     useEffect(() => {
         const fetchColleges = async () => {
             try {
-                const response = await axios.get('https://placxia.vercel.app/api/v1/auth/colleges');
+                const response = await axios.get('/api/v1/auth/colleges');
                 setCollegesList(response.data.data);
             } catch (err) {
                 setError(err.response?.data?.message || 'Could not load colleges. Please refresh and try again.');
@@ -61,7 +61,7 @@ const RegisterCompany = () => {
 
         setSubmitting(true);
         try {
-            await axios.post('https://placxia.vercel.app/api/v1/auth/register/company', formData);
+            await axios.post('/api/v1/auth/register/company', formData);
             setSuccess(true);
             setTimeout(() => navigate('/login'), 4000);
         } catch (err) {

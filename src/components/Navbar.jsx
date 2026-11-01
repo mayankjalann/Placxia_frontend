@@ -14,7 +14,7 @@ const Navbar = () => {
     
     const handleLogout = async () => {
         try {
-            await axios.post('https://placxia.vercel.app/api/v1/auth/logout', {}, {
+            await axios.post('/api/v1/auth/logout', {}, {
                 withCredentials: true
             });
             navigate('/');

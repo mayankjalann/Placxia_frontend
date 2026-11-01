@@ -34,7 +34,7 @@ function Layout() {
 
         setLoading(true);
         setSessionError('');
-        axios.get('https://placxia.vercel.app/api/v1/auth/current-user', { withCredentials: true })
+        axios.get('/api/v1/auth/current-user', { withCredentials: true })
         .then((response) => {
             if (active) dispatch(login({ userData: response.data.data }));
         })
