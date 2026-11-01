@@ -9,6 +9,7 @@ const RegisterCompany = () => {
     
     const [collegesList, setCollegesList] = useState([]);
     const [error, setError] = useState('');
+    const [existingAccount, setExistingAccount] = useState(false);
     const [collegesLoading, setCollegesLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -46,6 +47,7 @@ const RegisterCompany = () => {
     const handleRegister = async (e) => {
         e.preventDefault();
         setError('');
+        setExistingAccount(false);
         
         if (collegesLoading || collegesList.length === 0) {
             setError('Colleges are unavailable right now. Please refresh and try again.');
@@ -64,6 +66,7 @@ const RegisterCompany = () => {
             setTimeout(() => navigate('/login'), 4000);
         } catch (err) {
             setError(err.response?.data?.message || 'Registration failed. Please check your connection and try again.');
+            setExistingAccount(err.response?.status === 409);
         } finally {
             setSubmitting(false);
         }
@@ -88,7 +91,14 @@ const RegisterCompany = () => {
                 
                 {error && (
                     <div className="mb-6 p-4 bg-red-950/20 border border-red-900/30 rounded-xl flex items-start gap-3">
-                        <p className="text-red-400 text-sm font-medium">{error}</p>
+                        <div>
+                            <p className="text-red-400 text-sm font-medium">{error}</p>
+                            {existingAccount && (
+                                <button type="button" onClick={() => navigate('/login')} className="mt-3 text-sm font-semibold text-white underline underline-offset-4">
+                                    Sign in to your account
+                                </button>
+                            )}
+                        </div>
                     </div>
                 )}
                 
