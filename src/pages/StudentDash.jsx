@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import JobDetailsModal from '../components/JobDetailsModal';
+import { login } from '../store/authSlice';
 
 const StudentDash = () => {
     const userData = useSelector((state) => state.auth.userData);
+    const dispatch = useDispatch();
     const studentProfile = userData?.studentProfile || {};
     const navigate = useNavigate();
 
@@ -15,20 +17,24 @@ const StudentDash = () => {
     const [error, setError] = useState('');
     const [appliedJobs, setAppliedJobs] = useState(new Set());
     const [myApplications, setMyApplications] = useState([]);
+    const [offers, setOffers] = useState([]);
+    const [respondingToOffer, setRespondingToOffer] = useState(null);
     const [selectedJobId, setSelectedJobId] = useState(null);
 
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                const [jobsRes, appsRes] = await Promise.all([
+                const [jobsRes, appsRes, offersRes] = await Promise.all([
                     axios.get('https://placxia.vercel.app/api/v1/job/getAllOpenJobs', { withCredentials: true }),
-                    axios.get('https://placxia.vercel.app/api/v1/application/getMyApplications', { withCredentials: true })
+                    axios.get('https://placxia.vercel.app/api/v1/application/getMyApplications', { withCredentials: true }),
+                    axios.get('https://placxia.vercel.app/api/v1/offer/getStudentOffers', { withCredentials: true })
                 ]);
                 
                 setJobs(jobsRes.data.data);
                 
                 const myApps = appsRes.data.data;
                 setMyApplications(myApps);
+                setOffers(offersRes.data.data);
 
                 // app.job is now populated, so we must extract app.job._id
                 const appliedIds = new Set(myApps.map(app => app.job?._id || app.job));
@@ -76,11 +82,41 @@ const StudentDash = () => {
             setAppliedJobs(prev => new Set(prev).add(jobId)); 
             alert("Application registered.");
         } catch (err) {
-            if (err.response?.data?.message === "You have already applied for this job") {
+            if (err.response?.status === 409 || err.response?.data?.message === "You have already applied for this job") {
                 setAppliedJobs(prev => new Set(prev).add(jobId));
             } else {
                 alert(err.response?.data?.message || "Failed to apply");
             }
+        }
+    };
+
+    const handleOfferResponse = async (offerId, status) => {
+        setRespondingToOffer(offerId);
+        try {
+            const response = await axios.patch(
+                `https://placxia.vercel.app/api/v1/offer/respondToOffer/${offerId}`,
+                { status },
+                { withCredentials: true }
+            );
+            setOffers((previous) => previous.map((offer) =>
+                offer._id === offerId ? response.data.data : offer
+            ));
+            if (status === 'ACCEPTED') {
+                const placementStatus = studentProfile.placementStatus === 'PLACED' ||
+                    studentProfile.placementStatus === 'MULTIPLE_OFFERS'
+                    ? 'MULTIPLE_OFFERS'
+                    : 'PLACED';
+                dispatch(login({
+                    userData: {
+                        ...userData,
+                        studentProfile: { ...studentProfile, placementStatus }
+                    }
+                }));
+            }
+        } catch (err) {
+            alert(err.response?.data?.message || 'Could not update this offer. Please try again.');
+        } finally {
+            setRespondingToOffer(null);
         }
     };
 
@@ -158,6 +194,49 @@ const StudentDash = () => {
                         </div>
                     </div>
                 )}
+
+                {offers.length > 0 && (
+                    <section className="mb-16">
+                        <h3 className="text-xl font-bold tracking-tight mb-6 text-white/80 border-b border-white/10 pb-4">Offers</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {offers.map((offer) => (
+                                <article key={offer._id} className="rounded-2xl border border-white/10 bg-zinc-950 p-6">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div>
+                                            <h4 className="text-lg font-bold text-white">{offer.job?.title || 'Job offer'}</h4>
+                                            <p className="mt-1 text-sm text-zinc-400">{offer.company?.name || 'Company'}</p>
+                                            <p className="mt-3 text-sm text-zinc-300">{offer.offeredCtc} LPA</p>
+                                            {offer.joiningDate && (
+                                                <p className="mt-1 text-xs text-zinc-500">Joining {new Date(offer.joiningDate).toLocaleDateString()}</p>
+                                            )}
+                                        </div>
+                                        <span className="rounded-full border border-white/10 px-3 py-1 text-xs uppercase text-zinc-300">{offer.status}</span>
+                                    </div>
+                                    {offer.status === 'PENDING' && (
+                                        <div className="mt-5 flex gap-3">
+                                            <button
+                                                type="button"
+                                                disabled={respondingToOffer === offer._id}
+                                                onClick={() => handleOfferResponse(offer._id, 'ACCEPTED')}
+                                                className="flex-1 rounded-full bg-white px-4 py-3 text-sm font-semibold text-black disabled:opacity-50"
+                                            >
+                                                Accept
+                                            </button>
+                                            <button
+                                                type="button"
+                                                disabled={respondingToOffer === offer._id}
+                                                onClick={() => handleOfferResponse(offer._id, 'DECLINED')}
+                                                className="flex-1 rounded-full bg-zinc-800 px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
+                                            >
+                                                Decline
+                                            </button>
+                                        </div>
+                                    )}
+                                </article>
+                            ))}
+                        </div>
+                    </section>
+                )}
                 {/* ------------------------------- */}
 
                 {loading && <p className="text-zinc-500 animate-pulse text-lg">Indexing network...</p>}
@@ -191,12 +270,12 @@ const StudentDash = () => {
 
                                             <div className="mt-auto relative z-10 transition-transform duration-500 group-hover:-translate-y-16">
                                                 <h3 className="text-2xl font-bold tracking-tight text-white/90 mb-2">{job.title}</h3>
-                                                <div className="text-zinc-500 text-sm mb-4 font-semibold tracking-wider uppercase">{job.company?.companyProfile?.companyName || 'Undisclosed'}</div>
+                                                <div className="text-zinc-500 text-sm mb-4 font-semibold tracking-wider uppercase">{job.company?.name || 'Undisclosed'}</div>
                                                 
                                                 <div className="flex gap-4 text-sm text-zinc-400 border-t border-white/5 pt-4">
                                                     <span>{job.location}</span>
                                                     <span>•</span>
-                                                    <span>{job.salary} LPA</span>
+                                                    <span>{job.ctcMin}–{job.ctcMax} LPA</span>
                                                 </div>
                                             </div>
 

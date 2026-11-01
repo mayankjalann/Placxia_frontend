@@ -1,27 +1,37 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useDispatch } from 'react-redux';
 import { login } from '../store/authSlice';
 
 const ProfileModal = ({ isOpen, onClose, userData }) => {
-    if (!isOpen || !userData) return null;
-
     const dispatch = useDispatch();
-    const isStudent = userData.role === 'STUDENT';
-    const isCompany = userData.role === 'COMPANY';
+    const isStudent = userData?.role === 'STUDENT';
+    const isCompany = userData?.role === 'COMPANY';
 
     // 1. Unified State Object
     const [formData, setFormData] = useState({
-        cgpa: userData.studentProfile?.cgpa || '',
-        skills: userData.studentProfile?.skills?.join(', ') || '',
-        linkedinUrl: userData.studentProfile?.linkedinUrl || '',
-        website: userData.companyProfile?.website || '',
-        description: userData.companyProfile?.description || '',
+        cgpa: userData?.studentProfile?.cgpa || '',
+        skills: userData?.studentProfile?.skills?.join(', ') || '',
+        linkedinUrl: userData?.studentProfile?.linkedinUrl || '',
+        website: userData?.companyProfile?.website || '',
+        description: userData?.companyProfile?.description || '',
     });
 
     // 2. Separate State for Files
     const [file, setFile] = useState(null); 
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (!userData) return;
+        setFormData({
+            cgpa: userData.studentProfile?.cgpa || '',
+            skills: userData.studentProfile?.skills?.join(', ') || '',
+            linkedinUrl: userData.studentProfile?.linkedinUrl || '',
+            website: userData.companyProfile?.website || '',
+            description: userData.companyProfile?.description || '',
+        });
+        setFile(null);
+    }, [isOpen, userData]);
 
     // 3. Unified Change Handler
     const handleChange = (e) => {
@@ -48,7 +58,7 @@ const ProfileModal = ({ isOpen, onClose, userData }) => {
                     // Send skills as a JSON array string since Multer FormData strips native arrays easily
                     // But wait, our backend expects an array. Let's send them individually.
                     const skillArray = formData.skills.split(',').map(s => s.trim()).filter(s => s);
-                    skillArray.forEach(skill => submitData.append('skills[]', skill));
+                    skillArray.forEach(skill => submitData.append('skills', skill));
                 }
 
                 if (file) submitData.append('resume', file); // 'resume' matches backend multer
@@ -81,6 +91,8 @@ const ProfileModal = ({ isOpen, onClose, userData }) => {
             setLoading(false);
         }
     };
+
+    if (!isOpen || !userData) return null;
 
     return (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50">

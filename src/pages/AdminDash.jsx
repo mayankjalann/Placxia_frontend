@@ -23,7 +23,7 @@ const AdminDash = () => {
             setCompanies(response.data.data);
             setLoading(false);
         } catch (err) {
-            setError("Failed to load pending companies");
+            setError(err.response?.data?.message || "Failed to load pending companies");
             setLoading(false);
         }
     };
@@ -95,7 +95,16 @@ const AdminDash = () => {
                             </div>
                             <div>
                                 <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-2">Branch</label>
-                                <input type="text" required value={studentBranch} onChange={(e) => setStudentBranch(e.target.value)} className="w-full px-5 py-4 bg-zinc-900 border border-white/10 rounded-xl text-white focus:border-white/30 focus:outline-none transition-all" placeholder="e.g. Computer Science"/>
+                                <select required value={studentBranch} onChange={(e) => setStudentBranch(e.target.value)} className="w-full px-5 py-4 bg-zinc-900 border border-white/10 rounded-xl text-white focus:border-white/30 focus:outline-none transition-all">
+                                    <option value="" disabled>Select a branch</option>
+                                    <option value="CSE">Computer Science (CSE)</option>
+                                    <option value="IT">Information Technology (IT)</option>
+                                    <option value="ECE">Electronics (ECE)</option>
+                                    <option value="EE">Electrical (EE)</option>
+                                    <option value="ME">Mechanical (ME)</option>
+                                    <option value="CE">Civil (CE)</option>
+                                    <option value="OTHER">Other</option>
+                                </select>
                             </div>
                             <div>
                                 <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-2">Batch (Graduation)</label>

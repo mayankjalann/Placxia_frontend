@@ -52,6 +52,7 @@ const PostJobModal = ({ isOpen, onClose, onJobPosted, editJob = null }) => {
                     setColleges(approvedList);
                     setLoadingColleges(false);
                 } catch (err) {
+                    setError(err.response?.data?.message || 'Could not load approved colleges.');
                     setLoadingColleges(false);
                 }
             };
@@ -79,6 +80,17 @@ const PostJobModal = ({ isOpen, onClose, onJobPosted, editJob = null }) => {
         e.preventDefault();
         setLoading(true);
         setError('');
+
+        if (Number(formData.ctcMax) < Number(formData.ctcMin)) {
+            setError('Maximum package must be at least the minimum package.');
+            setLoading(false);
+            return;
+        }
+        if (formData.deadline < new Date().toISOString().slice(0, 10)) {
+            setError('Choose today or a future application deadline.');
+            setLoading(false);
+            return;
+        }
 
         try {
             // We can just send formData directly now because eligibleColleges is natively an Array!
@@ -170,11 +182,11 @@ const PostJobModal = ({ isOpen, onClose, onJobPosted, editJob = null }) => {
                     <div className="grid grid-cols-2 gap-6">
                         <div>
                             <label className="block text-zinc-400 text-sm font-medium mb-2 uppercase tracking-widest">Min Package</label>
-                            <input type="number" name="ctcMin" value={formData.ctcMin} onChange={handleChange} className="w-full bg-zinc-900 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white/30 transition-colors" />
+                            <input type="number" name="ctcMin" min="0" value={formData.ctcMin} onChange={handleChange} className="w-full bg-zinc-900 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white/30 transition-colors" />
                         </div>
                         <div>
                             <label className="block text-zinc-400 text-sm font-medium mb-2 uppercase tracking-widest">Max Package</label>
-                            <input type="number" name="ctcMax" value={formData.ctcMax} onChange={handleChange} className="w-full bg-zinc-900 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white/30 transition-colors" />
+                            <input type="number" name="ctcMax" min="0" value={formData.ctcMax} onChange={handleChange} className="w-full bg-zinc-900 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-white/30 transition-colors" />
                         </div>
                     </div>
 

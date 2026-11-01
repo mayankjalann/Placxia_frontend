@@ -21,8 +21,9 @@ const Navbar = () => {
             setTimeout(() => {
                 dispatch(logout());
             }, 100);
-        } catch (err) {
-            alert("Failed to logout. Please try again.");
+        } catch {
+            dispatch(logout());
+            navigate('/', { replace: true });
         }
     };
 

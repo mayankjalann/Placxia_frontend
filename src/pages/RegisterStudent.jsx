@@ -7,7 +7,6 @@ const RegisterStudent =()=>{
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [phone, setPhone] = useState('');
-    const [college, setCollege] = useState('');
     const [error, setError] = useState('');
 
     const navigate=useNavigate();
@@ -20,8 +19,8 @@ const RegisterStudent =()=>{
             try {
                 const response = await axios.get('https://placxia.vercel.app/api/v1/auth/colleges');
                 setCollegesList(response.data.data);
-            } catch (err) {
-                console.log("Failed to fetch colleges");
+            } catch {
+                setError('Could not load colleges. Please refresh and try again.');
             }
         };
         fetchColleges();
@@ -82,7 +81,7 @@ const RegisterStudent =()=>{
                     
                     <div className="space-y-2">
                         <label className="text-xs font-semibold text-zinc-400 uppercase tracking-widest block">Password</label>
-                        <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
+                        <input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)}
                             className="w-full px-5 py-4 bg-zinc-900 border border-white/10 rounded-xl text-white focus:outline-none focus:border-white/30 transition-all"
                         />
                     </div>

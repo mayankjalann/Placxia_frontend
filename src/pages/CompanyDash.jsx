@@ -164,7 +164,7 @@ const CompanyDash = () => {
                                                 <div className="flex gap-4 text-sm text-zinc-400 mb-4 font-medium">
                                                     <span>{job.location}</span>
                                                     <span>•</span>
-                                                    <span>{job.salary} LPA</span>
+                                                    <span>{job.ctcMin}–{job.ctcMax} LPA</span>
                                                 </div>
                                                 <p className="text-zinc-500 text-sm line-clamp-2 leading-relaxed">
                                                     {job.description}

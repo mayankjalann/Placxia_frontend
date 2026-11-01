@@ -4,16 +4,20 @@ import axios from 'axios';
 const JobDetailsModal = ({ jobId, onClose, hasApplied, onApply }) => {
     const [jobDetails, setJobDetails] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
 
     useEffect(() => {
         const fetchDetails = async () => {
+            setLoading(true);
+            setError('');
+            setJobDetails(null);
             try {
                 const response = await axios.get(`https://placxia.vercel.app/api/v1/job/getJobById/${jobId}`, {
                     withCredentials: true
                 });
                 setJobDetails(response.data.data);
             } catch (err) {
-                alert("Failed to load job details");
+                setError(err.response?.data?.message || "Failed to load job details");
             } finally {
                 setLoading(false);
             }
@@ -35,6 +39,8 @@ const JobDetailsModal = ({ jobId, onClose, hasApplied, onApply }) => {
 
                 {loading ? (
                     <div className="p-20 text-center text-zinc-500 text-lg">Indexing archive...</div>
+                ) : error ? (
+                    <div className="p-20 text-center text-red-400">{error}</div>
                 ) : jobDetails ? (
                     <div className="p-8 md:p-12">
                         {/* Header: Company & Job */}

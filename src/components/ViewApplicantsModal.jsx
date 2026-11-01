@@ -5,18 +5,34 @@ const ViewApplicantsModal = ({ isOpen, onClose, jobId }) => {
     const [applicants, setApplicants] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [offersByApplication, setOffersByApplication] = useState({});
+    const [offerDrafts, setOfferDrafts] = useState({});
+    const [sendingOfferFor, setSendingOfferFor] = useState(null);
+    const [offerError, setOfferError] = useState('');
 
     useEffect(() => {
         if (isOpen && jobId) {
             const fetchApplicants = async () => {
                 setLoading(true);
+                setError('');
+                setOfferError('');
                 try {
                     const response = await axios.get(`https://placxia.vercel.app/api/v1/application/getJobApplicants/${jobId}`, {
                         withCredentials: true
                     });
                     setApplicants(response.data.data);
+                    try {
+                        const offersResponse = await axios.get('https://placxia.vercel.app/api/v1/offer/getCompanyOffers', {
+                            withCredentials: true
+                        });
+                        setOffersByApplication(Object.fromEntries(
+                            offersResponse.data.data.map((offer) => [offer.application.toString(), offer])
+                        ));
+                    } catch (offerFetchError) {
+                        setOfferError(offerFetchError.response?.data?.message || 'Could not load existing offers.');
+                    }
                 } catch (err) {
-                    setError("Failed to load applicants.");
+                    setError(err.response?.data?.message || "Failed to load applicants.");
                 } finally {
                     setLoading(false);
                 }
@@ -37,7 +53,40 @@ const ViewApplicantsModal = ({ isOpen, onClose, jobId }) => {
                 app._id === applicationId ? { ...app, status: newStatus } : app
             ));
         } catch (err) {
-            alert("Failed to update status");
+            alert(err.response?.data?.message || "Failed to update status");
+        }
+    };
+
+    const handleOfferDraftChange = (applicationId, field, value) => {
+        setOfferDrafts((previous) => ({
+            ...previous,
+            [applicationId]: { ...previous[applicationId], [field]: value }
+        }));
+    };
+
+    const handleCreateOffer = async (applicationId) => {
+        const draft = offerDrafts[applicationId] || {};
+        if (!draft.offeredCtc || Number(draft.offeredCtc) <= 0) {
+            setOfferError('Enter an offered package greater than zero.');
+            return;
+        }
+
+        setSendingOfferFor(applicationId);
+        setOfferError('');
+        try {
+            const response = await axios.post(
+                `https://placxia.vercel.app/api/v1/offer/createOffer/${applicationId}`,
+                { offeredCtc: Number(draft.offeredCtc), joiningDate: draft.joiningDate || undefined },
+                { withCredentials: true }
+            );
+            setOffersByApplication((previous) => ({
+                ...previous,
+                [applicationId]: response.data.data
+            }));
+        } catch (err) {
+            setOfferError(err.response?.data?.message || 'Failed to send the offer.');
+        } finally {
+            setSendingOfferFor(null);
         }
     };
 
@@ -73,7 +122,7 @@ const ViewApplicantsModal = ({ isOpen, onClose, jobId }) => {
                                     <div className="flex-1">
                                         <div className="flex items-center gap-4 mb-2">
                                             <h3 className="text-2xl font-bold text-white tracking-tight">
-                                                {app.student.name}
+                                                {app.student?.name || 'Student profile unavailable'}
                                             </h3>
                                             <span className={`text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-widest border ${
                                                 app.status === 'SELECTED' ? 'border-green-500/50 text-green-400 bg-green-950/30' :
@@ -85,9 +134,9 @@ const ViewApplicantsModal = ({ isOpen, onClose, jobId }) => {
                                             </span>
                                         </div>
                                         <div className="text-zinc-400 text-sm flex gap-4 font-medium uppercase tracking-widest">
-                                            <p>{app.student.branch} ({app.student.batch})</p>
+                                            <p>{app.student?.branch} ({app.student?.batch})</p>
                                             <p>•</p>
-                                            <p>CGPA: {app.student.cgpa}</p>
+                                            <p>CGPA: {app.student?.cgpa ?? '—'}</p>
                                         </div>
                                     </div>
 
@@ -122,10 +171,49 @@ const ViewApplicantsModal = ({ isOpen, onClose, jobId }) => {
                                             Reject
                                         </button>
                                     </div>
+
+                                    {app.status === 'SELECTED' && (
+                                        <div className="w-full md:w-72 space-y-3">
+                                            {offersByApplication[app._id] ? (
+                                                <p className="text-sm text-emerald-400">
+                                                    Offer {offersByApplication[app._id].status.toLowerCase()} · {offersByApplication[app._id].offeredCtc} LPA
+                                                </p>
+                                            ) : (
+                                                <>
+                                                    <input
+                                                        type="number"
+                                                        min="0.01"
+                                                        step="0.01"
+                                                        value={offerDrafts[app._id]?.offeredCtc || ''}
+                                                        onChange={(e) => handleOfferDraftChange(app._id, 'offeredCtc', e.target.value)}
+                                                        placeholder="Offer package (LPA)"
+                                                        aria-label="Offer package in LPA"
+                                                        className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-sm text-white"
+                                                    />
+                                                    <input
+                                                        type="date"
+                                                        value={offerDrafts[app._id]?.joiningDate || ''}
+                                                        onChange={(e) => handleOfferDraftChange(app._id, 'joiningDate', e.target.value)}
+                                                        aria-label="Joining date"
+                                                        className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-sm text-white [color-scheme:dark]"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleCreateOffer(app._id)}
+                                                        disabled={sendingOfferFor === app._id}
+                                                        className="w-full rounded-full bg-emerald-400 px-5 py-3 text-sm font-semibold text-black disabled:opacity-50"
+                                                    >
+                                                        {sendingOfferFor === app._id ? 'Sending offer…' : 'Send offer'}
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
                     )}
+                    {offerError && <p className="mt-4 text-sm text-red-400">{offerError}</p>}
                 </div>
             </div>
         </div>
