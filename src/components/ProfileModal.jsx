@@ -2,15 +2,19 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useDispatch } from 'react-redux';
 import { login } from '../store/authSlice';
+import { useToast } from './ToastContext';
 
 const ProfileModal = ({ isOpen, onClose, userData }) => {
     const dispatch = useDispatch();
+    const toast = useToast();
     const isStudent = userData?.role === 'STUDENT';
     const isCompany = userData?.role === 'COMPANY';
 
     // 1. Unified State Object
     const [formData, setFormData] = useState({
         cgpa: userData?.studentProfile?.cgpa || '',
+        tenthPercentage: userData?.studentProfile?.tenthPercentage ?? '',
+        twelfthPercentage: userData?.studentProfile?.twelfthPercentage ?? '',
         skills: userData?.studentProfile?.skills?.join(', ') || '',
         linkedinUrl: userData?.studentProfile?.linkedinUrl || '',
         website: userData?.companyProfile?.website || '',
@@ -25,6 +29,8 @@ const ProfileModal = ({ isOpen, onClose, userData }) => {
         if (!userData) return;
         setFormData({
             cgpa: userData.studentProfile?.cgpa || '',
+            tenthPercentage: userData.studentProfile?.tenthPercentage ?? '',
+            twelfthPercentage: userData.studentProfile?.twelfthPercentage ?? '',
             skills: userData.studentProfile?.skills?.join(', ') || '',
             linkedinUrl: userData.studentProfile?.linkedinUrl || '',
             website: userData.companyProfile?.website || '',
@@ -52,6 +58,8 @@ const ProfileModal = ({ isOpen, onClose, userData }) => {
             if (isStudent) {
                 url = '/api/v1/auth/update-student';
                 if (formData.cgpa) submitData.append('cgpa', formData.cgpa);
+                submitData.append('tenthPercentage', formData.tenthPercentage);
+                submitData.append('twelfthPercentage', formData.twelfthPercentage);
                 if (formData.linkedinUrl) submitData.append('linkedinUrl', formData.linkedinUrl);
                 
                 if (formData.skills) {
@@ -75,7 +83,7 @@ const ProfileModal = ({ isOpen, onClose, userData }) => {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
-            alert("Profile updated successfully!");
+            toast("Profile updated successfully.");
 
             // Refresh Redux Data!
             const userResponse = await axios.get('/api/v1/auth/current-user', {
@@ -86,7 +94,7 @@ const ProfileModal = ({ isOpen, onClose, userData }) => {
 
             onClose();
         } catch (err) {
-            alert(err.response?.data?.message || "Failed to update profile");
+            toast(err.response?.data?.message || "Failed to update profile", 'error');
         } finally {
             setLoading(false);
         }
@@ -116,6 +124,14 @@ const ProfileModal = ({ isOpen, onClose, userData }) => {
                                     value={formData.cgpa} onChange={handleChange} 
                                     className="w-full px-5 py-4 bg-zinc-900 border border-white/10 rounded-xl text-white focus:outline-none focus:border-white/30 transition-all" 
                                 />
+                            </div>
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-widest">10th percentage
+                                    <input type="number" min="0" max="100" step="0.01" name="tenthPercentage" value={formData.tenthPercentage} onChange={handleChange} className="mt-2 w-full rounded-xl border border-white/10 bg-zinc-900 px-5 py-4 text-white focus:border-white/30 focus:outline-none" />
+                                </label>
+                                <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-widest">12th percentage
+                                    <input type="number" min="0" max="100" step="0.01" name="twelfthPercentage" value={formData.twelfthPercentage} onChange={handleChange} className="mt-2 w-full rounded-xl border border-white/10 bg-zinc-900 px-5 py-4 text-white focus:border-white/30 focus:outline-none" />
+                                </label>
                             </div>
                             <div>
                                 <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-2">Skills (comma separated)</label>

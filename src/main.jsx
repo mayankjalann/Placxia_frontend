@@ -6,6 +6,7 @@ import { Provider } from 'react-redux'
 import store from './store/store.js'
 import {Route, RouterProvider,createBrowserRouter, createRoutesFromElements } from 'react-router-dom'
 import Layout from './components/Layout.jsx'
+import ToastProvider from './components/ToastProvider.jsx'
 import Login from './pages/Login.jsx'
 import RegisterStudent from './pages/RegisterStudent.jsx'
 import RegisterCompany from './pages/RegisterCompany.jsx'
@@ -28,7 +29,9 @@ const router=createBrowserRouter(
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <Provider store={store}>
-      <RouterProvider router={router}/>
+      <ToastProvider>
+        <RouterProvider router={router}/>
+      </ToastProvider>
     </Provider>
   </React.StrictMode>,
 )

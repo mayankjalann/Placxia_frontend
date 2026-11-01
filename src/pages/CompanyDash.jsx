@@ -4,9 +4,11 @@ import { useSelector } from 'react-redux';
 import { motion } from 'motion/react';
 import PostJobModal from '../components/PostJobModal';
 import ViewApplicantsModal from '../components/ViewApplicantsModal';
+import { useToast } from '../components/ToastContext';
 
 const CompanyDash = () => {
     const userData = useSelector((state) => state.auth.userData);
+    const toast = useToast();
     
     const [jobs, setJobs] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -42,7 +44,17 @@ const CompanyDash = () => {
             await axios.patch(`/api/v1/job/publish/${jobId}`, {}, { withCredentials: true });
             fetchCompanyJobs();
         } catch (err) {
-            alert(err.response?.data?.message || "Failed to publish job");
+            toast(err.response?.data?.message || "Failed to publish job", 'error');
+        }
+    };
+
+    const handleCloseJob = async (jobId) => {
+        if (!window.confirm('Close this job? Students will no longer be able to apply.')) return;
+        try {
+            await axios.patch(`/api/v1/job/close/${jobId}`, {}, { withCredentials: true });
+            fetchCompanyJobs();
+        } catch (err) {
+            toast(err.response?.data?.message || 'Failed to close job', 'error');
         }
     };
 
@@ -182,12 +194,10 @@ const CompanyDash = () => {
                                                     </button>
                                                 )}
                                                 {job.status === 'OPEN' && (
-                                                    <button 
-                                                        onClick={() => handleViewApplicants(job._id)}
-                                                        className="px-6 py-3 bg-white text-black text-sm font-semibold rounded-full hover:bg-zinc-200 transition-colors w-full"
-                                                    >
-                                                        Applicants
-                                                    </button>
+                                                    <>
+                                                        <button onClick={() => handleViewApplicants(job._id)} className="px-5 py-3 bg-white text-black text-sm font-semibold rounded-full hover:bg-zinc-200 transition-colors flex-1">Applicants</button>
+                                                        <button onClick={() => handleCloseJob(job._id)} className="px-4 py-3 bg-red-950/60 text-red-200 text-sm font-semibold rounded-full hover:bg-red-900/60 transition-colors">Close</button>
+                                                    </>
                                                 )}
                                                 <button 
                                                     onClick={() => {

@@ -5,12 +5,14 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import JobDetailsModal from '../components/JobDetailsModal';
 import { login } from '../store/authSlice';
+import { useToast } from '../components/ToastContext';
 
 const StudentDash = () => {
     const userData = useSelector((state) => state.auth.userData);
     const dispatch = useDispatch();
     const studentProfile = userData?.studentProfile || {};
     const navigate = useNavigate();
+    const toast = useToast();
 
     const [jobs, setJobs] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -18,16 +20,24 @@ const StudentDash = () => {
     const [appliedJobs, setAppliedJobs] = useState(new Set());
     const [myApplications, setMyApplications] = useState([]);
     const [offers, setOffers] = useState([]);
+    const [savedJobIds, setSavedJobIds] = useState(new Set());
+    const [searchTerm, setSearchTerm] = useState('');
+    const [jobTypeFilter, setJobTypeFilter] = useState('');
+    const [locationFilter, setLocationFilter] = useState('');
+    const [minimumSalary, setMinimumSalary] = useState('');
+    const [savedOnly, setSavedOnly] = useState(false);
+    const [actionMessage, setActionMessage] = useState('');
     const [respondingToOffer, setRespondingToOffer] = useState(null);
     const [selectedJobId, setSelectedJobId] = useState(null);
 
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                const [jobsRes, appsRes, offersRes] = await Promise.all([
+                const [jobsRes, appsRes, offersRes, savedRes] = await Promise.all([
                     axios.get('/api/v1/job/getAllOpenJobs', { withCredentials: true }),
                     axios.get('/api/v1/application/getMyApplications', { withCredentials: true }),
-                    axios.get('/api/v1/offer/getStudentOffers', { withCredentials: true })
+                    axios.get('/api/v1/offer/getStudentOffers', { withCredentials: true }),
+                    axios.get('/api/v1/job/saved', { withCredentials: true })
                 ]);
                 
                 setJobs(jobsRes.data.data);
@@ -35,6 +45,7 @@ const StudentDash = () => {
                 const myApps = appsRes.data.data;
                 setMyApplications(myApps);
                 setOffers(offersRes.data.data);
+                setSavedJobIds(new Set(savedRes.data.data.map((job) => job._id)));
 
                 // app.job is now populated, so we must extract app.job._id
                 const appliedIds = new Set(myApps.map(app => app.job?._id || app.job));
@@ -53,6 +64,31 @@ const StudentDash = () => {
             navigate('/login');
         }
     }, [userData, navigate])
+
+    const filteredJobs = jobs.filter((job) => {
+        const query = searchTerm.trim().toLowerCase();
+        const matchesSearch = !query || [job.title, job.description, job.company?.name, job.location, ...(job.requiredSkills || [])]
+            .some((value) => value?.toLowerCase().includes(query));
+        return matchesSearch && (!jobTypeFilter || job.jobType === jobTypeFilter) &&
+            (!locationFilter || job.location?.toLowerCase().includes(locationFilter.toLowerCase())) &&
+            (!minimumSalary || job.ctcMax >= Number(minimumSalary)) &&
+            (!savedOnly || savedJobIds.has(job._id));
+    });
+
+    const toggleSaveJob = async (jobId) => {
+        setActionMessage('');
+        try {
+            const response = await axios.patch(`/api/v1/job/save/${jobId}`, {}, { withCredentials: true });
+            setSavedJobIds((current) => {
+                const next = new Set(current);
+                if (response.data.data.saved) next.add(jobId);
+                else next.delete(jobId);
+                return next;
+            });
+        } catch (requestError) {
+            setActionMessage(requestError.response?.data?.message || 'Could not save this job.');
+        }
+    };
 
     // Calculate Dynamic Profile Strength
     const calculateProfileStrength = () => {
@@ -80,12 +116,18 @@ const StudentDash = () => {
         try {
             await axios.post(`/api/v1/application/applyForJob/${jobId}`, {}, { withCredentials: true });
             setAppliedJobs(prev => new Set(prev).add(jobId)); 
-            alert("Application registered.");
+            try {
+                const applicationsResponse = await axios.get('/api/v1/application/getMyApplications', { withCredentials: true });
+                setMyApplications(applicationsResponse.data.data);
+            } catch {
+                // The application succeeded; a refresh failure must not show a false apply error.
+            }
+            toast("Application registered.");
         } catch (err) {
             if (err.response?.status === 409 || err.response?.data?.message === "You have already applied for this job") {
                 setAppliedJobs(prev => new Set(prev).add(jobId));
             } else {
-                alert(err.response?.data?.message || "Failed to apply");
+                toast(err.response?.data?.message || "Failed to apply", 'error');
             }
         }
     };
@@ -114,7 +156,7 @@ const StudentDash = () => {
                 }));
             }
         } catch (err) {
-            alert(err.response?.data?.message || 'Could not update this offer. Please try again.');
+            toast(err.response?.data?.message || 'Could not update this offer. Please try again.', 'error');
         } finally {
             setRespondingToOffer(null);
         }
@@ -189,6 +231,18 @@ const StudentDash = () => {
                                     }`}>
                                         {app.status}
                                     </span>
+                                    {app.rounds?.length > 0 && (
+                                        <ol className="mt-4 w-full space-y-2 border-l border-white/10 pl-4">
+                                            {app.rounds.map((round) => (
+                                                <li key={round._id || round.roundNo} className="text-xs text-zinc-400">
+                                                    <span className="font-semibold text-zinc-200">Round {round.roundNo} · {round.roundType}</span>
+                                                    {round.scheduledAt && <span> · {new Date(round.scheduledAt).toLocaleString()}</span>}
+                                                    <span> · {round.result}</span>
+                                                    {round.feedback && <p className="mt-1">{round.feedback}</p>}
+                                                </li>
+                                            ))}
+                                        </ol>
+                                    )}
                                 </div>
                             ))}
                         </div>
@@ -241,17 +295,29 @@ const StudentDash = () => {
 
                 {loading && <p className="text-zinc-500 animate-pulse text-lg">Indexing network...</p>}
                 {error && <p className="text-red-400 p-4 bg-red-950/20 border border-red-900/30 rounded-xl">{error}</p>}
+                <div className="mb-8 grid grid-cols-1 gap-3 rounded-2xl border border-white/10 bg-zinc-950 p-4 md:grid-cols-4">
+                    <input aria-label="Search jobs" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Search role, company, skill" className="rounded-xl border border-white/10 bg-zinc-900 px-4 py-3 text-sm text-white placeholder:text-zinc-500" />
+                    <select aria-label="Filter by job type" value={jobTypeFilter} onChange={(event) => setJobTypeFilter(event.target.value)} className="rounded-xl border border-white/10 bg-zinc-900 px-4 py-3 text-sm text-white">
+                        <option value="">All job types</option><option value="FULL_TIME">Full time</option><option value="INTERN">Internship</option><option value="PPO">PPO</option>
+                    </select>
+                    <input aria-label="Filter by location" value={locationFilter} onChange={(event) => setLocationFilter(event.target.value)} placeholder="Location" className="rounded-xl border border-white/10 bg-zinc-900 px-4 py-3 text-sm text-white placeholder:text-zinc-500" />
+                    <input aria-label="Minimum package" type="number" min="0" value={minimumSalary} onChange={(event) => setMinimumSalary(event.target.value)} placeholder="Minimum package (LPA)" className="rounded-xl border border-white/10 bg-zinc-900 px-4 py-3 text-sm text-white placeholder:text-zinc-500" />
+                </div>
+                <button type="button" aria-pressed={savedOnly} onClick={() => setSavedOnly((value) => !value)} className={`mb-6 rounded-full border px-5 py-2.5 text-sm ${savedOnly ? 'border-amber-300 bg-amber-300 text-black' : 'border-white/15 text-white hover:bg-white/5'}`}>
+                    {savedOnly ? 'Showing saved jobs · Clear' : `Saved jobs (${savedJobIds.size})`}
+                </button>
+                {actionMessage && <p role="status" className="mb-5 text-sm text-rose-300">{actionMessage}</p>}
 
                 {!loading && !error && (
                     <>
-                        {jobs.length === 0 ? (
+                        {filteredJobs.length === 0 ? (
                             <div className="w-full bg-zinc-950 border border-white/5 rounded-[2rem] p-16 md:p-32 flex flex-col items-center justify-center text-center">
-                                <h3 className="text-3xl font-bold tracking-tight mb-4 text-white/80">No Opportunities Found</h3>
-                                <p className="text-zinc-500 text-lg max-w-[30ch]">The network is currently empty. Please return later for new archives.</p>
+                                <h3 className="text-3xl font-bold tracking-tight mb-4 text-white/80">No matching opportunities</h3>
+                                <p className="text-zinc-500 text-lg max-w-[30ch]">Try clearing one or more filters to see available roles.</p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                {jobs.map((job, index) => (
+                                {filteredJobs.map((job, index) => (
                                     <motion.div 
                                         key={job._id}
                                         initial={{ opacity: 0, y: 40 }}
@@ -263,9 +329,10 @@ const StudentDash = () => {
                                             
                                             <div className="flex justify-between items-start mb-8">
                                                 <div className="text-5xl font-serif italic text-white/10">{(index + 1).toString().padStart(2, '0')}</div>
-                                                <span className="px-3 py-1 text-[10px] font-semibold uppercase tracking-widest rounded-full border border-zinc-700 text-zinc-400">
-                                                    {job.jobType}
-                                                </span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="px-3 py-1 text-[10px] font-semibold uppercase tracking-widest rounded-full border border-zinc-700 text-zinc-400">{job.jobType}</span>
+                                                    <button type="button" onClick={() => toggleSaveJob(job._id)} aria-label={savedJobIds.has(job._id) ? 'Remove saved job' : 'Save job'} className="rounded-full border border-white/10 px-3 py-1 text-xs text-white hover:bg-white/10">{savedJobIds.has(job._id) ? '★ Saved' : '☆ Save'}</button>
+                                                </div>
                                             </div>
 
                                             <div className="mt-auto relative z-10 transition-transform duration-500 group-hover:-translate-y-16">

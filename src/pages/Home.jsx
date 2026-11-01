@@ -1,8 +1,19 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 
 const Home = () => {
+    const [stats, setStats] = useState(null);
+
+    useEffect(() => {
+        axios.get('/api/v1/job/public-stats')
+            .then((response) => setStats(response.data.data))
+            .catch(() => setStats({ activePartners: 0, applications: 0, highestPackage: 0 }));
+    }, []);
+
+    const formatCount = (value) => stats ? Number(value || 0).toLocaleString() : '—';
+
     return (
         <div className="bg-black text-white min-h-screen font-sans selection:bg-zinc-800 selection:text-white">
             
@@ -86,7 +97,7 @@ const Home = () => {
                                 <div className="absolute inset-0 bg-gradient-to-b from-zinc-800/50 to-zinc-950/50"></div>
                                 <div className="absolute inset-0 p-8 flex flex-col justify-between z-10">
                                     <div className="text-6xl font-serif italic text-white/20">01</div>
-                                    <h3 className="text-3xl font-bold tracking-tight text-white/90">500+</h3>
+                                    <h3 className="text-3xl font-bold tracking-tight text-white/90">{formatCount(stats?.activePartners)}</h3>
                                 </div>
                                 <div className="absolute inset-x-0 bottom-0 p-6 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out flex justify-center z-20">
                                     <span className="bg-white/90 backdrop-blur-md text-zinc-900 text-sm font-semibold px-6 py-3 rounded-full shadow-lg">View Network</span>
@@ -110,15 +121,15 @@ const Home = () => {
                                 <div className="absolute inset-0 bg-gradient-to-b from-zinc-800/50 to-zinc-950/50"></div>
                                 <div className="absolute inset-0 p-8 flex flex-col justify-between z-10">
                                     <div className="text-6xl font-serif italic text-white/20">02</div>
-                                    <h3 className="text-3xl font-bold tracking-tight text-white/90">10k+</h3>
+                                    <h3 className="text-3xl font-bold tracking-tight text-white/90">{formatCount(stats?.applications)}</h3>
                                 </div>
                                 <div className="absolute inset-x-0 bottom-0 p-6 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out flex justify-center z-20">
                                     <span className="bg-white/90 backdrop-blur-md text-zinc-900 text-sm font-semibold px-6 py-3 rounded-full shadow-lg">View Successes</span>
                                 </div>
                             </div>
                             <div className="flex justify-between items-start">
-                                <h3 className="text-xl font-medium tracking-tight text-white group-hover:text-zinc-300 transition-colors">Offers Extended</h3>
-                                <span className="text-lg text-zinc-500">Verified</span>
+                                <h3 className="text-xl font-medium tracking-tight text-white group-hover:text-zinc-300 transition-colors">Applications</h3>
+                                <span className="text-lg text-zinc-500">Tracked</span>
                             </div>
                         </motion.div>
 
@@ -134,7 +145,7 @@ const Home = () => {
                                 <div className="absolute inset-0 bg-gradient-to-b from-zinc-800/50 to-zinc-950/50"></div>
                                 <div className="absolute inset-0 p-8 flex flex-col justify-between z-10">
                                     <div className="text-6xl font-serif italic text-white/20">03</div>
-                                    <h3 className="text-3xl font-bold tracking-tight text-white/90">50L</h3>
+                                    <h3 className="text-3xl font-bold tracking-tight text-white/90">{stats?.highestPackage ? `${stats.highestPackage}L` : '—'}</h3>
                                 </div>
                                 <div className="absolute inset-x-0 bottom-0 p-6 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out flex justify-center z-20">
                                     <span className="bg-white/90 backdrop-blur-md text-zinc-900 text-sm font-semibold px-6 py-3 rounded-full shadow-lg">View Details</span>

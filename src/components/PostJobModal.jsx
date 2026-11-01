@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
+import { useToast } from './ToastContext';
 
 const PostJobModal = ({ isOpen, onClose, onJobPosted, editJob = null }) => {
-    
+    const toast = useToast();
     const userData = useSelector((state) => state.auth.userData);
 
     const [colleges, setColleges] = useState([]);
@@ -17,6 +18,12 @@ const PostJobModal = ({ isOpen, onClose, onJobPosted, editJob = null }) => {
         deadline: '',
         ctcMin: 0,
         ctcMax: 0,
+        cgpaCutoff: 0,
+        tenthCutoff: 0,
+        twelfthCutoff: 0,
+        requiredSkills: '',
+        allowedBranches: '',
+        batchEligible: '',
         eligibleColleges: [] // NOW AN ARRAY!
     });
     
@@ -35,11 +42,18 @@ const PostJobModal = ({ isOpen, onClose, onJobPosted, editJob = null }) => {
                     deadline: editJob.deadline ? editJob.deadline.split('T')[0] : '',
                     ctcMin: editJob.ctcMin,
                     ctcMax: editJob.ctcMax,
+                    cgpaCutoff: editJob.cgpaCutoff || 0,
+                    tenthCutoff: editJob.tenthCutoff || 0,
+                    twelfthCutoff: editJob.twelfthCutoff || 0,
+                    requiredSkills: editJob.requiredSkills?.join(', ') || '',
+                    allowedBranches: editJob.allowedBranches?.join(', ') || '',
+                    batchEligible: editJob.batchEligible?.join(', ') || '',
                     eligibleColleges: editJob.eligibleColleges || [] // LOAD ALL SELECTED COLLEGES
                 });
             } else {
                 setFormData({
-                    title: '', description: '', positionsAvailable: 1, jobType: 'FULL_TIME', deadline: '', ctcMin: 0, ctcMax: 0, eligibleColleges: []
+                    title: '', description: '', positionsAvailable: 1, jobType: 'FULL_TIME', deadline: '', ctcMin: 0, ctcMax: 0,
+                    cgpaCutoff: 0, tenthCutoff: 0, twelfthCutoff: 0, requiredSkills: '', allowedBranches: '', batchEligible: '', eligibleColleges: []
                 });
             }
 
@@ -93,13 +107,19 @@ const PostJobModal = ({ isOpen, onClose, onJobPosted, editJob = null }) => {
         }
 
         try {
+            const payload = {
+                ...formData,
+                requiredSkills: formData.requiredSkills.split(',').map((item) => item.trim()).filter(Boolean),
+                allowedBranches: formData.allowedBranches.split(',').map((item) => item.trim().toUpperCase()).filter(Boolean),
+                batchEligible: formData.batchEligible.split(',').map((item) => item.trim()).filter(Boolean),
+            };
             // We can just send formData directly now because eligibleColleges is natively an Array!
             if (editJob) {
-                await axios.patch(`/api/v1/job/update/${editJob._id}`, formData, { withCredentials: true });
-                alert("Job Updated Successfully!");
+                await axios.patch(`/api/v1/job/update/${editJob._id}`, payload, { withCredentials: true });
+                toast("Job updated successfully.");
             } else {
-                await axios.post('/api/v1/job/create', formData, { withCredentials: true });
-                alert("Job saved as DRAFT successfully!");
+                await axios.post('/api/v1/job/create', payload, { withCredentials: true });
+                toast("Job saved as draft successfully.");
             }
             
             onJobPosted(); 
@@ -178,6 +198,18 @@ const PostJobModal = ({ isOpen, onClose, onJobPosted, editJob = null }) => {
                             </select>
                         </div>
                     </div>
+
+                    <section className="space-y-4 rounded-2xl border border-white/5 bg-zinc-900/40 p-5">
+                        <div><h3 className="font-semibold text-white">Eligibility and matching</h3><p className="mt-1 text-xs text-zinc-500">Students must meet the criteria you set here to view and apply.</p></div>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                            <label className="text-xs uppercase tracking-widest text-zinc-400">Minimum CGPA<input type="number" name="cgpaCutoff" min="0" max="10" step="0.01" value={formData.cgpaCutoff} onChange={handleChange} className="mt-2 w-full rounded-xl border border-white/10 bg-zinc-900 p-3 text-white" /></label>
+                            <label className="text-xs uppercase tracking-widest text-zinc-400">10th cutoff %<input type="number" name="tenthCutoff" min="0" max="100" step="0.01" value={formData.tenthCutoff} onChange={handleChange} className="mt-2 w-full rounded-xl border border-white/10 bg-zinc-900 p-3 text-white" /></label>
+                            <label className="text-xs uppercase tracking-widest text-zinc-400">12th cutoff %<input type="number" name="twelfthCutoff" min="0" max="100" step="0.01" value={formData.twelfthCutoff} onChange={handleChange} className="mt-2 w-full rounded-xl border border-white/10 bg-zinc-900 p-3 text-white" /></label>
+                        </div>
+                        <input name="requiredSkills" value={formData.requiredSkills} onChange={handleChange} placeholder="Required skills, comma separated" className="w-full rounded-xl border border-white/10 bg-zinc-900 p-3 text-sm text-white" />
+                        <input name="allowedBranches" value={formData.allowedBranches} onChange={handleChange} placeholder="Branches (CSE, IT); leave blank for all" className="w-full rounded-xl border border-white/10 bg-zinc-900 p-3 text-sm text-white" />
+                        <input name="batchEligible" value={formData.batchEligible} onChange={handleChange} placeholder="Graduation batches (2026, 2027); leave blank for all" className="w-full rounded-xl border border-white/10 bg-zinc-900 p-3 text-sm text-white" />
+                    </section>
 
                     <div className="grid grid-cols-2 gap-6">
                         <div>

@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { logout } from '../store/authSlice';
+import NotificationBell from './NotificationBell';
 
 const Navbar = () => {
    
@@ -43,6 +44,7 @@ const Navbar = () => {
                 {/* Logged in Actions */}
                 {authStatus && userData ? (
                     <div className="flex items-center gap-6">
+                        <NotificationBell enabled={authStatus && Boolean(userData)} />
                         <div className="text-right hidden sm:block">
                             <p className="text-white font-bold">{userData.name}</p>
                             <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">{userData.role}</p>

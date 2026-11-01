@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useToast } from './ToastContext';
 
 const ViewApplicantsModal = ({ isOpen, onClose, jobId }) => {
+    const toast = useToast();
     const [applicants, setApplicants] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -9,6 +11,11 @@ const ViewApplicantsModal = ({ isOpen, onClose, jobId }) => {
     const [offerDrafts, setOfferDrafts] = useState({});
     const [sendingOfferFor, setSendingOfferFor] = useState(null);
     const [offerError, setOfferError] = useState('');
+    const [pipelineError, setPipelineError] = useState('');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('');
+    const [roundDrafts, setRoundDrafts] = useState({});
+    const [savingRoundFor, setSavingRoundFor] = useState(null);
 
     useEffect(() => {
         if (isOpen && jobId) {
@@ -16,6 +23,7 @@ const ViewApplicantsModal = ({ isOpen, onClose, jobId }) => {
                 setLoading(true);
                 setError('');
                 setOfferError('');
+                setPipelineError('');
                 try {
                     const response = await axios.get(`/api/v1/application/getJobApplicants/${jobId}`, {
                         withCredentials: true
@@ -41,6 +49,48 @@ const ViewApplicantsModal = ({ isOpen, onClose, jobId }) => {
         }
     }, [isOpen, jobId]);
 
+    const visibleApplicants = applicants.filter((app) => {
+        const search = searchTerm.trim().toLowerCase();
+        const matchesSearch = !search || [app.student?.name, app.student?.rollNo, app.student?.branch, app.student?.batch]
+            .some((value) => value?.toLowerCase().includes(search));
+        return matchesSearch && (!statusFilter || app.status === statusFilter);
+    });
+
+    const updateRoundDraft = (application, field, value) => {
+        setRoundDrafts((previous) => ({
+            ...previous,
+            [application._id]: {
+                roundNo: application.rounds?.length ? Math.max(...application.rounds.map((round) => round.roundNo)) + 1 : 1,
+                roundType: 'TECHNICAL',
+                result: 'PENDING',
+                ...previous[application._id],
+                [field]: value,
+            },
+        }));
+    };
+
+    const saveInterviewRound = async (application) => {
+        const draft = roundDrafts[application._id] || {};
+        if (!draft.scheduledAt) {
+            setPipelineError('Choose the interview date and time before saving.');
+            return;
+        }
+        setSavingRoundFor(application._id);
+        setPipelineError('');
+        try {
+            const response = await axios.patch(`/api/v1/application/${application._id}/rounds`, {
+                ...draft,
+                scheduledAt: new Date(draft.scheduledAt).toISOString(),
+            }, { withCredentials: true });
+            setApplicants((previous) => previous.map((item) => item._id === application._id ? response.data.data : item));
+            setRoundDrafts((previous) => ({ ...previous, [application._id]: { ...draft, roundNo: Number(draft.roundNo) + 1, scheduledAt: '' } }));
+        } catch (err) {
+            setPipelineError(err.response?.data?.message || 'Could not save the interview round.');
+        } finally {
+            setSavingRoundFor(null);
+        }
+    };
+
     const handleUpdateStatus = async (applicationId, newStatus) => {
         try {
             await axios.patch(`/api/v1/application/updateApplicationStatus/${applicationId}`,
@@ -53,7 +103,7 @@ const ViewApplicantsModal = ({ isOpen, onClose, jobId }) => {
                 app._id === applicationId ? { ...app, status: newStatus } : app
             ));
         } catch (err) {
-            alert(err.response?.data?.message || "Failed to update status");
+            toast(err.response?.data?.message || "Failed to update status", 'error');
         }
     };
 
@@ -106,6 +156,8 @@ const ViewApplicantsModal = ({ isOpen, onClose, jobId }) => {
                 <div className="p-8 overflow-y-auto flex-1 bg-black/20">
                     {loading && <p className="text-zinc-500 text-lg">Indexing profiles...</p>}
                     {error && <p className="text-red-400 bg-red-950/20 p-4 rounded-xl border border-red-900/30">{error}</p>}
+                    {!loading && !error && applicants.length > 0 && <div className="mb-6 grid grid-cols-1 gap-3 md:grid-cols-[1fr_14rem]"><input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Search name, roll number, branch" aria-label="Search applicants" className="rounded-xl border border-white/10 bg-zinc-900 px-4 py-3 text-sm text-white" /><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} aria-label="Filter applicant status" className="rounded-xl border border-white/10 bg-zinc-900 px-4 py-3 text-sm text-white"><option value="">All pipeline stages</option><option value="APPLIED">Applied</option><option value="SHORTLISTED">Shortlisted</option><option value="SELECTED">Selected</option><option value="REJECTED">Rejected</option></select></div>}
+                    {pipelineError && <p role="alert" className="mb-4 rounded-xl border border-rose-900/30 bg-rose-950/20 p-3 text-sm text-rose-300">{pipelineError}</p>}
                     
                     {!loading && !error && applicants.length === 0 && (
                         <div className="text-center py-20">
@@ -113,9 +165,10 @@ const ViewApplicantsModal = ({ isOpen, onClose, jobId }) => {
                         </div>
                     )}
 
-                    {!loading && applicants.length > 0 && (
+                    {!loading && applicants.length > 0 && visibleApplicants.length === 0 && <p className="py-8 text-center text-sm text-zinc-500">No applicants match this search or stage.</p>}
+                    {!loading && visibleApplicants.length > 0 && (
                         <div className="grid grid-cols-1 gap-6">
-                            {applicants.map(app => (
+                            {visibleApplicants.map(app => (
                                 <div key={app._id} className="bg-zinc-900 rounded-2xl p-6 border border-white/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 hover:border-white/20 transition-colors">
                                     
                                     {/* Student Info */}
@@ -171,6 +224,20 @@ const ViewApplicantsModal = ({ isOpen, onClose, jobId }) => {
                                             Reject
                                         </button>
                                     </div>
+
+                                    <details className="w-full rounded-xl border border-white/10 bg-black/30 p-4">
+                                        <summary className="cursor-pointer text-sm font-semibold text-white">Interview rounds ({app.rounds?.length || 0})</summary>
+                                        {app.rounds?.length > 0 && <ol className="my-4 space-y-2">{app.rounds.map((round) => <li key={round._id || round.roundNo} className="rounded-lg bg-zinc-900 p-3 text-xs text-zinc-300">Round {round.roundNo} · {round.roundType} · {round.result}{round.scheduledAt ? ` · ${new Date(round.scheduledAt).toLocaleString()}` : ''}{round.interviewerName ? ` · ${round.interviewerName}` : ''}</li>)}</ol>}
+                                        <div className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-2">
+                                            <input type="number" min="1" aria-label="Round number" value={roundDrafts[app._id]?.roundNo ?? (app.rounds?.length ? Math.max(...app.rounds.map((round) => round.roundNo)) + 1 : 1)} onChange={(event) => updateRoundDraft(app, 'roundNo', event.target.value)} className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white" />
+                                            <select aria-label="Round type" value={roundDrafts[app._id]?.roundType || 'TECHNICAL'} onChange={(event) => updateRoundDraft(app, 'roundType', event.target.value)} className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white"><option value="APTITUDE">Aptitude</option><option value="TECHNICAL">Technical</option><option value="HR">HR</option><option value="GD">Group discussion</option></select>
+                                            <input type="datetime-local" aria-label="Interview date and time" value={roundDrafts[app._id]?.scheduledAt || ''} onChange={(event) => updateRoundDraft(app, 'scheduledAt', event.target.value)} className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white [color-scheme:dark]" />
+                                            <input aria-label="Interviewer name" placeholder="Interviewer name" value={roundDrafts[app._id]?.interviewerName || ''} onChange={(event) => updateRoundDraft(app, 'interviewerName', event.target.value)} className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white" />
+                                            <select aria-label="Round result" value={roundDrafts[app._id]?.result || 'PENDING'} onChange={(event) => updateRoundDraft(app, 'result', event.target.value)} className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white"><option value="PENDING">Pending</option><option value="PASS">Pass</option><option value="FAIL">Fail</option></select>
+                                            <input aria-label="Interview feedback" placeholder="Feedback (optional)" value={roundDrafts[app._id]?.feedback || ''} onChange={(event) => updateRoundDraft(app, 'feedback', event.target.value)} className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white" />
+                                        </div>
+                                        <button type="button" onClick={() => saveInterviewRound(app)} disabled={savingRoundFor === app._id || app.status === 'REJECTED'} className="mt-3 rounded-full bg-indigo-300 px-5 py-2 text-sm font-semibold text-black disabled:opacity-50">{savingRoundFor === app._id ? 'Saving…' : 'Save round and notify student'}</button>
+                                    </details>
 
                                     {app.status === 'SELECTED' && (
                                         <div className="w-full md:w-72 space-y-3">

@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
+import { parseStudentCsv } from '../utils/parseStudentCsv';
+import { useToast } from '../components/ToastContext';
 
 const AdminDash = () => {
     const userData = useSelector((state) => state.auth.userData);
+    const toast = useToast();
     
     const [companies, setCompanies] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -14,6 +17,12 @@ const AdminDash = () => {
     const [studentRollNo, setStudentRollNo] = useState('');
     const [studentBranch, setStudentBranch] = useState('');
     const [studentBatch, setStudentBatch] = useState('');
+    const [analytics, setAnalytics] = useState(null);
+    const [analyticsError, setAnalyticsError] = useState('');
+    const [bulkRows, setBulkRows] = useState([]);
+    const [bulkError, setBulkError] = useState('');
+    const [bulkResult, setBulkResult] = useState(null);
+    const [bulkLoading, setBulkLoading] = useState(false);
 
     const fetchPendingCompanies = async () => {
         try {
@@ -34,10 +43,10 @@ const AdminDash = () => {
             {}, 
             { withCredentials: true }
             );
-            alert("Company Approved! They can now post jobs.");
+            toast("Company approved. They can now post jobs.");
             fetchPendingCompanies(); // Refresh the list instantly
         } catch (err) {
-            alert(err.response?.data?.message || "Failed to approve company");
+            toast(err.response?.data?.message || "Failed to approve company", 'error');
         }
     };
 
@@ -53,19 +62,75 @@ const AdminDash = () => {
                 },
                 { withCredentials: true }
             );
-            alert(`Successfully authorized student: ${studentEmail}`);
+            toast(`Authorized student: ${studentEmail}`);
             setStudentEmail('');
             setStudentRollNo('');
             setStudentBranch('');
             setStudentBatch('');
         } catch (err) {
-            alert(err.response?.data?.message || "Failed to add student");
+            toast(err.response?.data?.message || "Failed to add student", 'error');
         }
     };
 
     useEffect(() => {
         fetchPendingCompanies();
+        axios.get('/api/v1/admin/analytics', { withCredentials: true })
+            .then((response) => setAnalytics(response.data.data))
+            .catch((err) => setAnalyticsError(err.response?.data?.message || 'Could not load placement analytics.'));
     }, []);
+
+    const handleCsvFile = async (event) => {
+        setBulkError('');
+        setBulkResult(null);
+        const file = event.target.files?.[0];
+        if (!file) return;
+        try {
+            const rows = parseStudentCsv(await file.text());
+            if (rows.length > 500) throw new Error('Please upload no more than 500 rows at a time.');
+            setBulkRows(rows);
+        } catch (parseError) {
+            setBulkRows([]);
+            setBulkError(parseError.message || 'Could not read this CSV.');
+        }
+    };
+
+    const importStudents = async () => {
+        setBulkLoading(true);
+        setBulkError('');
+        try {
+            const response = await axios.post('/api/v1/admin/bulk-allowed-students', { students: bulkRows }, { withCredentials: true });
+            setBulkResult(response.data.data);
+            setBulkRows([]);
+            fetchPendingCompanies();
+        } catch (err) {
+            setBulkError(err.response?.data?.message || 'Could not import students.');
+        } finally {
+            setBulkLoading(false);
+        }
+    };
+
+    const exportAnalytics = () => {
+        if (!analytics) return;
+        const csvRows = [
+            ['Batch', 'Students', 'Placed', 'Placement rate'],
+            ...(analytics.batchStats || []).map((item) => [item._id, item.students, item.placed, item.students ? `${Math.round((item.placed / item.students) * 100)}%` : '0%']),
+            [],
+            ['Metric', 'Value'],
+            ['Total students', analytics.totalStudents],
+            ['Placed students', analytics.placedStudents],
+            ['Placement rate', `${analytics.placementRate}%`],
+            ['Open jobs', analytics.openJobs],
+            ['Applications', analytics.applications],
+            ['Pending companies', analytics.pendingCompanies],
+            ['Approved companies', analytics.approvedCompanies],
+        ];
+        const csv = csvRows.map((row) => row.map((cell) => `"${String(cell ?? '').replaceAll('"', '""')}"`).join(',')).join('\n');
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+        link.download = 'placxia-placement-analytics.csv';
+        link.click();
+        URL.revokeObjectURL(link.href);
+    };
 
     return (
         <div className="min-h-screen bg-black p-8 text-white">
@@ -79,6 +144,23 @@ const AdminDash = () => {
                         Session active: <span className="text-white">{userData?.name}</span>. Review pending applications and manage access.
                     </p>
                 </div>
+
+                <section className="mb-12 rounded-[2rem] border border-white/10 bg-zinc-950 p-8">
+                    <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+                        <div><h2 className="text-2xl font-bold">Placement analytics</h2><p className="mt-1 text-sm text-zinc-500">Your college’s live placement activity.</p></div>
+                        <button type="button" onClick={exportAnalytics} disabled={!analytics} className="rounded-full border border-white/15 px-5 py-3 text-sm text-white disabled:opacity-40">Export CSV</button>
+                    </div>
+                    {analyticsError && <p role="alert" className="mb-4 text-sm text-rose-300">{analyticsError}</p>}
+                    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                        {[
+                            ['Students', analytics?.totalStudents], ['Placed', analytics?.placedStudents],
+                            ['Placement rate', `${analytics?.placementRate ?? 0}%`], ['Open jobs', analytics?.openJobs],
+                            ['Applications', analytics?.applications], ['Pending companies', analytics?.pendingCompanies],
+                            ['Approved companies', analytics?.approvedCompanies],
+                        ].map(([label, value]) => <div key={label} className="rounded-xl border border-white/5 bg-black/40 p-4"><p className="text-xs uppercase tracking-widest text-zinc-500">{label}</p><p className="mt-2 text-2xl font-semibold text-white">{value ?? '—'}</p></div>)}
+                    </div>
+                    {analytics?.batchStats?.length > 0 && <div className="mt-6 space-y-3">{analytics.batchStats.map((item) => <div key={item._id} className="grid grid-cols-[5rem_1fr_5rem] items-center gap-3 text-sm"><span className="text-zinc-400">{item._id}</span><div className="h-2 overflow-hidden rounded-full bg-zinc-800"><div className="h-full rounded-full bg-emerald-400" style={{ width: `${item.students ? (item.placed / item.students) * 100 : 0}%` }} /></div><span className="text-right text-zinc-300">{item.placed}/{item.students}</span></div>)}</div>}
+                </section>
 
                 {/* ADD STUDENT SECTION */}
                 <div className="mb-12 bg-zinc-950 rounded-[2rem] p-8 border border-white/10 shadow-2xl">
@@ -118,6 +200,15 @@ const AdminDash = () => {
                         </div>
                     </form>
                 </div>
+
+                <section className="mb-12 rounded-[2rem] border border-white/10 bg-zinc-950 p-8">
+                    <h2 className="mb-2 text-2xl font-bold">Bulk authorize students</h2>
+                    <p className="mb-5 text-sm text-zinc-500">CSV columns: email, rollNo, branch, batch. Up to 500 rows per import.</p>
+                    <input type="file" accept=".csv,text/csv" onChange={handleCsvFile} className="block w-full text-sm text-zinc-400 file:mr-4 file:rounded-full file:border-0 file:bg-white file:px-5 file:py-3 file:font-medium file:text-black" />
+                    {bulkRows.length > 0 && <div className="mt-5 space-y-3"><p className="text-sm text-emerald-300">{bulkRows.length} rows ready to import.</p><div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="text-zinc-500"><tr><th className="p-2">Email</th><th className="p-2">Roll no.</th><th className="p-2">Branch</th><th className="p-2">Batch</th></tr></thead><tbody>{bulkRows.slice(0, 5).map((row) => <tr key={row.rowNumber} className="border-t border-white/5"><td className="p-2">{row.email}</td><td className="p-2">{row.rollNo}</td><td className="p-2">{row.branch}</td><td className="p-2">{row.batch}</td></tr>)}</tbody></table></div><button type="button" onClick={importStudents} disabled={bulkLoading} className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-black disabled:opacity-50">{bulkLoading ? 'Importing…' : 'Import students'}</button></div>}
+                    {bulkError && <p role="alert" className="mt-4 text-sm text-rose-300">{bulkError}</p>}
+                    {bulkResult && <div className="mt-4 rounded-xl bg-black/40 p-4 text-sm"><p className="text-emerald-300">Imported {bulkResult.imported} students.</p>{bulkResult.rejected.length > 0 && <ul className="mt-2 space-y-1 text-amber-200">{bulkResult.rejected.map((row) => <li key={row.row}>Row {row.row} ({row.email}): {row.reason}</li>)}</ul>}</div>}
+                </section>
 
                 <div className="mb-8">
                     <h2 className="text-2xl font-bold text-white tracking-tight">Pending Partnerships</h2>
