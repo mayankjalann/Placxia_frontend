@@ -17,6 +17,13 @@ const CompanyDash = () => {
     const [isApplicantsModalOpen, setIsApplicantsModalOpen] = useState(false);
     const [selectedJobId, setSelectedJobId] = useState(null);
 
+    const requestedColleges = userData?.companyProfile?.requestedColleges || [];
+    const approvedColleges = userData?.companyProfile?.approvedColleges || [];
+    const approvedRequestedColleges = requestedColleges.filter((requestedId) =>
+        approvedColleges.some((approvedId) => approvedId.toString() === requestedId.toString())
+    );
+    const canPostJobs = approvedRequestedColleges.length > 0;
+
     const fetchCompanyJobs = async () => {
         try {
             const response = await axios.get('https://placxia.vercel.app/api/v1/job/getCompanyJobs', {
@@ -77,13 +84,25 @@ const CompanyDash = () => {
                         setJobToEdit(null);
                         setIsModalOpen(true);
                     }}
-                    className="mt-8 md:mt-0 relative inline-flex items-center justify-center font-medium overflow-hidden rounded-full transition-colors focus:outline-none py-3 tracking-tight h-14 px-8 text-base bg-white text-black hover:bg-zinc-200"
+                    disabled={!canPostJobs}
+                    className="mt-8 md:mt-0 relative inline-flex items-center justify-center font-medium overflow-hidden rounded-full transition-colors focus:outline-none py-3 tracking-tight h-14 px-8 text-base bg-white text-black hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    Post New Listing
+                    {canPostJobs ? 'Post New Listing' : 'Awaiting Approval'}
                 </motion.button>
             </header>
 
             <main className="max-w-7xl mx-auto px-6 lg:px-12 mt-16">
+
+                <section className={`mb-12 rounded-2xl border p-6 ${canPostJobs ? 'border-emerald-900/50 bg-emerald-950/20' : 'border-amber-900/50 bg-amber-950/20'}`} aria-live="polite">
+                    <h2 className="text-lg font-semibold text-white">
+                        {canPostJobs ? 'Partnership approved' : 'Partnership request pending'}
+                    </h2>
+                    <p className="mt-2 text-sm text-zinc-300">
+                        {canPostJobs
+                            ? `Approved by ${approvedRequestedColleges.length} of ${requestedColleges.length} requested ${requestedColleges.length === 1 ? 'college' : 'colleges'}. You can post jobs for approved colleges.`
+                            : 'Your application has been sent to the selected college administrators. You can sign in and track your dashboard, but job posting unlocks after a college approves your request.'}
+                    </p>
+                </section>
                 
                 {/* Stats Row */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-24">

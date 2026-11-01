@@ -9,6 +9,8 @@ const RegisterCompany = () => {
     
     const [collegesList, setCollegesList] = useState([]);
     const [error, setError] = useState('');
+    const [collegesLoading, setCollegesLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
     const navigate = useNavigate();
 
@@ -18,7 +20,9 @@ const RegisterCompany = () => {
                 const response = await axios.get('https://placxia.vercel.app/api/v1/auth/colleges');
                 setCollegesList(response.data.data);
             } catch (err) {
-                console.log("Failed to fetch colleges");
+                setError(err.response?.data?.message || 'Could not load colleges. Please refresh and try again.');
+            } finally {
+                setCollegesLoading(false);
             }
         };
         fetchColleges();
@@ -43,17 +47,25 @@ const RegisterCompany = () => {
         e.preventDefault();
         setError('');
         
+        if (collegesLoading || collegesList.length === 0) {
+            setError('Colleges are unavailable right now. Please refresh and try again.');
+            return;
+        }
+
         if (formData.requestedColleges.length === 0) {
             setError("You must request at least one college to partner with.");
             return;
         }
 
+        setSubmitting(true);
         try {
             await axios.post('https://placxia.vercel.app/api/v1/auth/register/company', formData);
             setSuccess(true);
-            setTimeout(() => navigate('/login'), 4000); // Send them to login after 4 seconds
+            setTimeout(() => navigate('/login'), 4000);
         } catch (err) {
-            setError(err.response?.data?.message || 'Registration failed');
+            setError(err.response?.data?.message || 'Registration failed. Please check your connection and try again.');
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -97,7 +109,15 @@ const RegisterCompany = () => {
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs font-semibold text-zinc-400 uppercase tracking-widest block">Industry Sector</label>
-                                <input type="text" name="industry" required onChange={handleChange} placeholder="e.g. Technology" className="w-full px-5 py-4 bg-zinc-900 border border-white/10 rounded-xl text-white focus:outline-none focus:border-white/30 transition-all" />
+                                <select name="industry" required value={formData.industry} onChange={handleChange} className="w-full px-5 py-4 bg-zinc-900 border border-white/10 rounded-xl text-white focus:outline-none focus:border-white/30 transition-all">
+                                    <option value="" disabled>Select an industry</option>
+                                    <option value="TECH">Technology</option>
+                                    <option value="FINANCE">Finance</option>
+                                    <option value="CORE">Core Engineering</option>
+                                    <option value="CONSULTING">Consulting</option>
+                                    <option value="ECOMMERCE">E-commerce</option>
+                                    <option value="OTHER">Other</option>
+                                </select>
                             </div>
                         </div>
                         
@@ -108,7 +128,7 @@ const RegisterCompany = () => {
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs font-semibold text-zinc-400 uppercase tracking-widest block">Password</label>
-                                <input type="password" name="password" required onChange={handleChange} className="w-full px-5 py-4 bg-zinc-900 border border-white/10 rounded-xl text-white focus:outline-none focus:border-white/30 transition-all" />
+                                <input type="password" name="password" required minLength={6} onChange={handleChange} className="w-full px-5 py-4 bg-zinc-900 border border-white/10 rounded-xl text-white focus:outline-none focus:border-white/30 transition-all" />
                             </div>
                         </div>
 
@@ -124,6 +144,11 @@ const RegisterCompany = () => {
 
                         <div className="bg-zinc-900/50 p-6 rounded-2xl border border-white/5">
                             <label className="block text-white font-medium mb-4">Request Affiliation</label>
+                            {collegesLoading ? (
+                                <p className="text-sm text-zinc-500">Loading colleges...</p>
+                            ) : collegesList.length === 0 ? (
+                                <p className="text-sm text-red-400">No colleges are available. Please refresh the page and try again.</p>
+                            ) : (
                             <div className="space-y-4 max-h-40 overflow-y-auto pr-2">
                                 {collegesList.map((col) => (
                                     <label key={col._id} className="flex items-center space-x-4 text-zinc-400 cursor-pointer hover:text-white transition-colors">
@@ -142,10 +167,11 @@ const RegisterCompany = () => {
                                     </label>
                                 ))}
                             </div>
+                            )}
                         </div>
 
-                        <button type="submit" className="w-full py-4 mt-8 bg-white hover:bg-zinc-200 text-black font-medium rounded-full transition-colors flex items-center justify-center gap-2">
-                            Submit Application
+                        <button type="submit" disabled={submitting || collegesLoading || collegesList.length === 0} className="w-full py-4 mt-8 bg-white hover:bg-zinc-200 text-black font-medium rounded-full transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                            {submitting ? 'Submitting...' : 'Submit Application'}
                         </button>
                     </form>
                 )}
