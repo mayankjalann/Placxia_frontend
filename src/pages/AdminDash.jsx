@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
 import { parseStudentCsv } from '../utils/parseStudentCsv';
@@ -19,6 +19,7 @@ const AdminDash = () => {
     const [studentBatch, setStudentBatch] = useState('');
     const [analytics, setAnalytics] = useState(null);
     const [analyticsError, setAnalyticsError] = useState('');
+    const [analyticsLoading, setAnalyticsLoading] = useState(true);
     const [bulkRows, setBulkRows] = useState([]);
     const [bulkError, setBulkError] = useState('');
     const [bulkResult, setBulkResult] = useState(null);
@@ -36,6 +37,19 @@ const AdminDash = () => {
             setLoading(false);
         }
     };
+
+    const fetchAnalytics = useCallback(async () => {
+        setAnalyticsLoading(true);
+        setAnalyticsError('');
+        try {
+            const response = await axios.get('/api/v1/admin/analytics', { withCredentials: true });
+            setAnalytics(response.data.data);
+        } catch (err) {
+            setAnalyticsError(err.response?.data?.message || 'Could not load placement analytics.');
+        } finally {
+            setAnalyticsLoading(false);
+        }
+    }, []);
 
     const handleApprove = async (companyId) => {
         try {
@@ -67,6 +81,7 @@ const AdminDash = () => {
             setStudentRollNo('');
             setStudentBranch('');
             setStudentBatch('');
+            fetchAnalytics();
         } catch (err) {
             toast(err.response?.data?.message || "Failed to add student", 'error');
         }
@@ -74,10 +89,8 @@ const AdminDash = () => {
 
     useEffect(() => {
         fetchPendingCompanies();
-        axios.get('/api/v1/admin/analytics', { withCredentials: true })
-            .then((response) => setAnalytics(response.data.data))
-            .catch((err) => setAnalyticsError(err.response?.data?.message || 'Could not load placement analytics.'));
-    }, []);
+        fetchAnalytics();
+    }, [fetchAnalytics]);
 
     const handleCsvFile = async (event) => {
         setBulkError('');
@@ -101,7 +114,7 @@ const AdminDash = () => {
             const response = await axios.post('/api/v1/admin/bulk-allowed-students', { students: bulkRows }, { withCredentials: true });
             setBulkResult(response.data.data);
             setBulkRows([]);
-            fetchPendingCompanies();
+            fetchAnalytics();
         } catch (err) {
             setBulkError(err.response?.data?.message || 'Could not import students.');
         } finally {
@@ -112,29 +125,53 @@ const AdminDash = () => {
     const exportAnalytics = () => {
         if (!analytics) return;
         const csvRows = [
-            ['Batch', 'Students', 'Placed', 'Placement rate'],
-            ...(analytics.batchStats || []).map((item) => [item._id, item.students, item.placed, item.students ? `${Math.round((item.placed / item.students) * 100)}%` : '0%']),
-            [],
-            ['Metric', 'Value'],
-            ['Total students', analytics.totalStudents],
+            ['Summary metric', 'Value'],
+            ['Authorized students', analytics.authorizedStudents],
+            ['Registered students', analytics.totalStudents],
             ['Placed students', analytics.placedStudents],
             ['Placement rate', `${analytics.placementRate}%`],
             ['Open jobs', analytics.openJobs],
             ['Applications', analytics.applications],
-            ['Pending companies', analytics.pendingCompanies],
             ['Approved companies', analytics.approvedCompanies],
+            ['Pending companies', analytics.pendingCompanies],
+            ['Offers sent', analytics.offerStats?.total],
+            ['Offers accepted', analytics.offerStats?.accepted],
+            ['Offers declined', analytics.offerStats?.declined],
+            ['Offers pending', analytics.offerStats?.pending],
+            ['Average accepted package (LPA)', analytics.offerStats?.averageAcceptedPackage],
+            ['Highest accepted package (LPA)', analytics.offerStats?.highestAcceptedPackage],
+            [],
+            ['Branch', 'Registered', 'Authorized', 'Placed', 'Placement rate'],
+            ...(analytics.branchStats || []).map((item) => [item._id, item.students, item.authorized, item.placed, `${item.placementRate}%`]),
+            [],
+            ['Batch', 'Registered', 'Placed', 'Placement rate'],
+            ...(analytics.batchStats || []).map((item) => [item._id, item.students, item.placed, `${item.placementRate}%`]),
+            [],
+            ['Application stage', 'Applications'],
+            ...(analytics.applicationFunnel || []).map((item) => [item.status, item.count]),
+            [],
+            ['Company', 'Jobs', 'Applicants', 'Offers', 'Accepted offers'],
+            ...(analytics.topCompanies || []).map((item) => [item.companyName, item.jobs, item.applicants, item.offers, item.acceptedOffers]),
+            [],
+            ['Month', 'Accepted offers'],
+            ...(analytics.monthlyAcceptedOffers || []).map((item) => [item._id, item.placements]),
         ];
-        const csv = csvRows.map((row) => row.map((cell) => `"${String(cell ?? '').replaceAll('"', '""')}"`).join(',')).join('\n');
+        const csv = csvRows.map((row) => row.map((cell) => {
+            const value = String(cell ?? '');
+            const safeValue = /^[=+@\-\t\r]/.test(value) ? `'${value}` : value;
+            return `"${safeValue.replaceAll('"', '""')}"`;
+        }).join(',')).join('\n');
         const link = document.createElement('a');
-        link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+        const objectUrl = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+        link.href = objectUrl;
         link.download = 'placxia-placement-analytics.csv';
         link.click();
-        URL.revokeObjectURL(link.href);
+        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
     };
 
     return (
         <div className="min-h-screen bg-black p-8 text-white">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-7xl mx-auto">
                 
                 <div className="mb-12 border-b border-white/5 pb-8">
                     <h1 className="text-5xl font-bold tracking-tight">
@@ -145,21 +182,65 @@ const AdminDash = () => {
                     </p>
                 </div>
 
-                <section className="mb-12 rounded-[2rem] border border-white/10 bg-zinc-950 p-8">
+                <section className="mb-12 rounded-[2rem] border border-white/10 bg-zinc-950 p-6 md:p-8">
                     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-                        <div><h2 className="text-2xl font-bold">Placement analytics</h2><p className="mt-1 text-sm text-zinc-500">Your college’s live placement activity.</p></div>
-                        <button type="button" onClick={exportAnalytics} disabled={!analytics} className="rounded-full border border-white/15 px-5 py-3 text-sm text-white disabled:opacity-40">Export CSV</button>
+                        <div><h2 className="text-2xl font-bold">Placement analytics</h2><p className="mt-1 text-sm text-zinc-500">College-scoped placement activity, recruiting funnel, and offer outcomes.</p></div>
+                        <div className="flex gap-3">
+                            <button type="button" onClick={fetchAnalytics} disabled={analyticsLoading} className="rounded-full border border-white/15 px-5 py-3 text-sm text-white disabled:opacity-40">{analyticsLoading ? 'Refreshing…' : 'Refresh'}</button>
+                            <button type="button" onClick={exportAnalytics} disabled={!analytics || analyticsLoading} className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-black disabled:opacity-40">Export CSV</button>
+                        </div>
                     </div>
                     {analyticsError && <p role="alert" className="mb-4 text-sm text-rose-300">{analyticsError}</p>}
-                    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-5">
                         {[
-                            ['Students', analytics?.totalStudents], ['Placed', analytics?.placedStudents],
-                            ['Placement rate', `${analytics?.placementRate ?? 0}%`], ['Open jobs', analytics?.openJobs],
-                            ['Applications', analytics?.applications], ['Pending companies', analytics?.pendingCompanies],
-                            ['Approved companies', analytics?.approvedCompanies],
-                        ].map(([label, value]) => <div key={label} className="rounded-xl border border-white/5 bg-black/40 p-4"><p className="text-xs uppercase tracking-widest text-zinc-500">{label}</p><p className="mt-2 text-2xl font-semibold text-white">{value ?? '—'}</p></div>)}
+                            ['Authorized students', analytics?.authorizedStudents], ['Registered students', analytics?.totalStudents],
+                            ['Placed students', analytics?.placedStudents], ['Placement rate', `${analytics?.placementRate ?? 0}%`],
+                            ['Open jobs', analytics?.openJobs], ['Applications', analytics?.applications],
+                            ['Approved companies', analytics?.approvedCompanies], ['Pending companies', analytics?.pendingCompanies],
+                            ['Accepted offers', analytics?.offerStats?.accepted], ['Avg accepted package', `${analytics?.offerStats?.averageAcceptedPackage ?? 0} LPA`],
+                        ].map(([label, value]) => <div key={label} className="rounded-xl border border-white/5 bg-black/40 p-4"><p className="text-xs uppercase tracking-widest text-zinc-500">{label}</p><p className="mt-2 text-xl font-semibold text-white">{analyticsLoading && !analytics ? '…' : value ?? '—'}</p></div>)}
                     </div>
-                    {analytics?.batchStats?.length > 0 && <div className="mt-6 space-y-3">{analytics.batchStats.map((item) => <div key={item._id} className="grid grid-cols-[5rem_1fr_5rem] items-center gap-3 text-sm"><span className="text-zinc-400">{item._id}</span><div className="h-2 overflow-hidden rounded-full bg-zinc-800"><div className="h-full rounded-full bg-emerald-400" style={{ width: `${item.students ? (item.placed / item.students) * 100 : 0}%` }} /></div><span className="text-right text-zinc-300">{item.placed}/{item.students}</span></div>)}</div>}
+
+                    <div className="mt-8 grid gap-6 xl:grid-cols-2">
+                        <div className="rounded-2xl border border-white/5 bg-black/30 p-5">
+                            <h3 className="text-lg font-semibold">Branch-wise placement</h3>
+                            <p className="mb-4 mt-1 text-xs text-zinc-500">Registered = student profiles; authorized = allowlist entries.</p>
+                            <div className="overflow-x-auto"><table className="w-full min-w-[34rem] text-left text-sm"><thead className="text-xs uppercase tracking-wider text-zinc-500"><tr><th className="py-2">Branch</th><th>Authorized</th><th>Registered</th><th>Placed</th><th>Rate</th></tr></thead><tbody>{(analytics?.branchStats || []).map((row) => <tr key={row._id} className="border-t border-white/5"><td className="py-3 font-semibold text-white">{row._id}</td><td className="text-zinc-400">{row.authorized}</td><td className="text-zinc-300">{row.students}</td><td className="text-zinc-300">{row.placed}</td><td className="min-w-28 text-emerald-300">{row.placementRate}%<div className="mt-1 h-1.5 rounded-full bg-zinc-800"><div className="h-1.5 rounded-full bg-emerald-400" style={{ width: `${row.placementRate}%` }} /></div></td></tr>)}</tbody></table>{!analyticsLoading && !analytics?.branchStats?.length && <p className="py-6 text-sm text-zinc-500">No registered students or authorized students yet.</p>}</div>
+                        </div>
+                        <div className="rounded-2xl border border-white/5 bg-black/30 p-5">
+                            <h3 className="text-lg font-semibold">Graduation batch-wise placement</h3>
+                            <p className="mb-4 mt-1 text-xs text-zinc-500">Placed students divided by registered students in each batch.</p>
+                            <div className="overflow-x-auto"><table className="w-full min-w-[25rem] text-left text-sm"><thead className="text-xs uppercase tracking-wider text-zinc-500"><tr><th className="py-2">Batch</th><th>Registered</th><th>Placed</th><th>Rate</th></tr></thead><tbody>{(analytics?.batchStats || []).map((row) => <tr key={row._id} className="border-t border-white/5"><td className="py-3 font-semibold text-white">{row._id}</td><td>{row.students}</td><td>{row.placed}</td><td className="text-emerald-300">{row.placementRate}%</td></tr>)}</tbody></table>{!analyticsLoading && !analytics?.batchStats?.length && <p className="py-6 text-sm text-zinc-500">No registered batch data yet.</p>}</div>
+                        </div>
+                    </div>
+
+                    <div className="mt-6 grid gap-6 xl:grid-cols-2">
+                        <div className="rounded-2xl border border-white/5 bg-black/30 p-5">
+                            <h3 className="text-lg font-semibold">Application funnel</h3>
+                            <p className="mb-4 mt-1 text-xs text-zinc-500">Current application state across jobs available to this college.</p>
+                            <div className="space-y-4">{(analytics?.applicationFunnel || []).map((stage) => <div key={stage.status}><div className="mb-1 flex justify-between text-sm"><span className="text-zinc-300">{stage.status.replace('_', ' ')}</span><span className="text-white">{stage.count}</span></div><div className="h-2 rounded-full bg-zinc-800"><div className="h-2 rounded-full bg-indigo-300" style={{ width: `${analytics?.applications ? (stage.count / analytics.applications) * 100 : 0}%` }} /></div></div>)}{analytics?.applications === 0 && <p className="py-3 text-sm text-zinc-500">No applications yet.</p>}</div>
+                        </div>
+                        <div className="rounded-2xl border border-white/5 bg-black/30 p-5">
+                            <h3 className="text-lg font-semibold">Offer outcomes</h3>
+                            <p className="mb-4 mt-1 text-xs text-zinc-500">Offer decisions and accepted package levels.</p>
+                            <div className="grid grid-cols-2 gap-3">{[['Sent', analytics?.offerStats?.total], ['Pending', analytics?.offerStats?.pending], ['Accepted', analytics?.offerStats?.accepted], ['Declined', analytics?.offerStats?.declined], ['Average accepted', `${analytics?.offerStats?.averageAcceptedPackage ?? 0} LPA`], ['Highest accepted', `${analytics?.offerStats?.highestAcceptedPackage ?? 0} LPA`]].map(([label, value]) => <div key={label} className="rounded-xl bg-zinc-900/70 p-4"><p className="text-xs text-zinc-500">{label}</p><p className="mt-1 font-semibold text-white">{value ?? '—'}</p></div>)}</div>
+                        </div>
+                    </div>
+
+                    <div className="mt-6 rounded-2xl border border-white/5 bg-black/30 p-5">
+                        <h3 className="text-lg font-semibold">Top recruiting companies</h3>
+                        <p className="mb-4 mt-1 text-xs text-zinc-500">Ranked by applicant volume for jobs targeting your college.</p>
+                        <div className="overflow-x-auto"><table className="w-full min-w-[36rem] text-left text-sm"><thead className="text-xs uppercase tracking-wider text-zinc-500"><tr><th className="py-2">Company</th><th>Jobs</th><th>Applicants</th><th>Offers</th><th>Accepted</th></tr></thead><tbody>{(analytics?.topCompanies || []).map((company) => <tr key={company.companyId} className="border-t border-white/5"><td className="py-3 font-medium text-white">{company.companyName}</td><td>{company.jobs}</td><td>{company.applicants}</td><td>{company.offers}</td><td className="text-emerald-300">{company.acceptedOffers}</td></tr>)}</tbody></table>{!analyticsLoading && !analytics?.topCompanies?.length && <p className="py-6 text-sm text-zinc-500">No company job activity yet.</p>}</div>
+                    </div>
+
+                    <div className="mt-6 rounded-2xl border border-white/5 bg-black/30 p-5">
+                        <h3 className="text-lg font-semibold">Accepted offers over time</h3>
+                        <p className="mb-4 mt-1 text-xs text-zinc-500">Monthly accepted offers over the last 12 months.</p>
+                        <div className="flex min-h-36 items-end gap-2 overflow-x-auto pb-2">{(analytics?.monthlyAcceptedOffers || []).map((month) => {
+                            const maxCount = Math.max(1, ...(analytics?.monthlyAcceptedOffers || []).map((item) => item.placements));
+                            return <div key={month._id} title={`${month._id}: ${month.placements} accepted offers`} className="flex min-w-10 flex-1 flex-col items-center gap-2"><span className="text-xs text-zinc-400">{month.placements}</span><div className="w-full rounded-t-md bg-emerald-400/80" style={{ height: `${Math.max(8, (month.placements / maxCount) * 90)}px` }} /><span className="text-[10px] text-zinc-500">{month._id}</span></div>;
+                        })}{!analyticsLoading && !analytics?.monthlyAcceptedOffers?.length && <p className="py-6 text-sm text-zinc-500">No accepted offers in the last 12 months.</p>}</div>
+                    </div>
                 </section>
 
                 {/* ADD STUDENT SECTION */}

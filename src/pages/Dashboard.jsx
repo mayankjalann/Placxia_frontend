@@ -1,12 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { lazy, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
-// Import our specific Dashboards
-import StudentDash from './StudentDash';
-import CompanyDash from './CompanyDash';
-import AdminDash from './AdminDash';
-// import CompanyDash from './CompanyDash'; // (We will build this tomorrow)
+const StudentDash = lazy(() => import('./StudentDash.jsx'));
+const CompanyDash = lazy(() => import('./CompanyDash.jsx'));
+const AdminDash = lazy(() => import('./AdminDash.jsx'));
 
 const Dashboard = () => {
     const userData = useSelector((state) => state.auth.userData);
@@ -24,16 +22,13 @@ const Dashboard = () => {
         return <div className="min-h-screen bg-slate-950 text-white p-10">Loading Dashboard...</div>;
     }
 
-    // THE TRAFFIC CONTROLLER LOGIC!
     if (userData.role === 'STUDENT') {
         return <StudentDash />;
     } 
     else if (userData.role === 'ADMIN') {
-        // We will replace this with <AdminDash /> tomorrow!
         return <AdminDash/>
     } 
     else if (userData.role === 'COMPANY') {
-        // We will replace this with <CompanyDash /> tomorrow!
         return <CompanyDash/>
     }
 
