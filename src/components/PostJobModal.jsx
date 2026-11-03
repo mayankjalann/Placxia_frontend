@@ -31,48 +31,59 @@ const PostJobModal = ({ isOpen, onClose, onJobPosted, editJob = null }) => {
     const [error, setError] = useState('');
 
     useEffect(() => {
-        if (isOpen) {
-            // IF EDITING, PRE-FILL EXISTING DATA
-            if (editJob) {
-                setFormData({
-                    title: editJob.title,
-                    description: editJob.description,
-                    positionsAvailable: editJob.positionsAvailable,
-                    jobType: editJob.jobType,
-                    deadline: editJob.deadline ? editJob.deadline.split('T')[0] : '',
-                    ctcMin: editJob.ctcMin,
-                    ctcMax: editJob.ctcMax,
-                    cgpaCutoff: editJob.cgpaCutoff || 0,
-                    tenthCutoff: editJob.tenthCutoff || 0,
-                    twelfthCutoff: editJob.twelfthCutoff || 0,
-                    requiredSkills: editJob.requiredSkills?.join(', ') || '',
-                    allowedBranches: editJob.allowedBranches?.join(', ') || '',
-                    batchEligible: editJob.batchEligible?.join(', ') || '',
-                    eligibleColleges: editJob.eligibleColleges || [] // LOAD ALL SELECTED COLLEGES
-                });
-            } else {
-                setFormData({
-                    title: '', description: '', positionsAvailable: 1, jobType: 'FULL_TIME', deadline: '', ctcMin: 0, ctcMax: 0,
-                    cgpaCutoff: 0, tenthCutoff: 0, twelfthCutoff: 0, requiredSkills: '', allowedBranches: '', batchEligible: '', eligibleColleges: []
-                });
-            }
-
-            const fetchColleges = async () => {
-                try {
-                    const response = await axios.get('/api/v1/auth/colleges');
-                    const allColleges = response.data.data;
-                    const approvedCollegeIds = userData?.companyProfile?.approvedColleges || [];
-                    const approvedList = allColleges.filter(c => approvedCollegeIds.includes(c._id));
-                    setColleges(approvedList);
-                    setLoadingColleges(false);
-                } catch (err) {
-                    setError(err.response?.data?.message || 'Could not load approved colleges.');
-                    setLoadingColleges(false);
-                }
-            };
-            fetchColleges();
+        if (!isOpen) return;
+        // Initialize the draft only when opening or switching between listings.
+        // Auth/profile refreshes must never overwrite text the user is typing.
+        if (editJob) {
+            setFormData({
+                title: editJob.title,
+                description: editJob.description,
+                positionsAvailable: editJob.positionsAvailable,
+                jobType: editJob.jobType,
+                deadline: editJob.deadline ? editJob.deadline.split('T')[0] : '',
+                ctcMin: editJob.ctcMin,
+                ctcMax: editJob.ctcMax,
+                cgpaCutoff: editJob.cgpaCutoff || 0,
+                tenthCutoff: editJob.tenthCutoff || 0,
+                twelfthCutoff: editJob.twelfthCutoff || 0,
+                requiredSkills: editJob.requiredSkills?.join(', ') || '',
+                allowedBranches: editJob.allowedBranches?.join(', ') || '',
+                batchEligible: editJob.batchEligible?.join(', ') || '',
+                eligibleColleges: editJob.eligibleColleges || []
+            });
+        } else {
+            setFormData({
+                title: '', description: '', positionsAvailable: 1, jobType: 'FULL_TIME', deadline: '', ctcMin: 0, ctcMax: 0,
+                cgpaCutoff: 0, tenthCutoff: 0, twelfthCutoff: 0, requiredSkills: '', allowedBranches: '', batchEligible: '', eligibleColleges: []
+            });
         }
-    }, [isOpen, editJob, userData]);
+        setError('');
+    }, [isOpen, editJob]);
+
+    const approvedCollegeIds = userData?.companyProfile?.approvedColleges || [];
+    const approvedCollegeKey = approvedCollegeIds.map((id) => id.toString()).sort().join(',');
+
+    useEffect(() => {
+        if (!isOpen) return;
+        let active = true;
+        setLoadingColleges(true);
+        const fetchColleges = async () => {
+            try {
+                const response = await axios.get('/api/v1/auth/colleges');
+                if (!active) return;
+                const allColleges = response.data.data;
+                const approvedIds = new Set(approvedCollegeKey ? approvedCollegeKey.split(',') : []);
+                setColleges(allColleges.filter((college) => approvedIds.has(college._id)));
+                setError('');
+            } catch (err) {
+                if (active) setError(err.response?.data?.message || 'Could not load approved colleges.');
+            } finally {
+                if (active) setLoadingColleges(false);
+            }
+        };
+        fetchColleges();
+        return () => { active = false; };
+    }, [isOpen, approvedCollegeKey]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
