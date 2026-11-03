@@ -21,7 +21,19 @@ const NotificationBell = ({ enabled }) => {
         }
     }, [enabled]);
 
-    useEffect(() => { loadNotifications(); }, [loadNotifications]);
+    useEffect(() => {
+        if (!enabled) return undefined;
+        loadNotifications();
+        const refreshIfVisible = () => { if (document.visibilityState === 'visible') loadNotifications(); };
+        const timer = window.setInterval(refreshIfVisible, 30000);
+        window.addEventListener('focus', refreshIfVisible);
+        document.addEventListener('visibilitychange', refreshIfVisible);
+        return () => {
+            window.clearInterval(timer);
+            window.removeEventListener('focus', refreshIfVisible);
+            document.removeEventListener('visibilitychange', refreshIfVisible);
+        };
+    }, [enabled, loadNotifications]);
 
     const markAllRead = async () => {
         try {

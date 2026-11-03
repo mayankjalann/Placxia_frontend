@@ -4,6 +4,7 @@ import Navbar from "./Navbar";
 import { useDispatch } from "react-redux";
 import { login, logout } from "../store/authSlice";
 import axios from "axios";
+import { announceLogout, setActiveAuthRole } from "../api/authSync";
 
 function Layout() {
     const dispatch = useDispatch();
@@ -12,6 +13,34 @@ function Layout() {
     const [loading, setLoading] = useState(true);
     const [sessionError, setSessionError] = useState('');
     const [retryCount, setRetryCount] = useState(0);
+
+    useEffect(() => {
+        const onLogin = async (event) => {
+            try {
+                const response = await axios.get('/api/v1/auth/current-user', { withCredentials: true });
+                if (response.data.data.role !== event.detail?.role) return;
+                setActiveAuthRole(response.data.data.role);
+                dispatch(login({ userData: response.data.data }));
+                if (location.pathname === '/login') navigate('/dashboard', { replace: true });
+            } catch {
+                // The tab may have received a login notice while cookies were still updating.
+            }
+        };
+        const onLogout = (event) => {
+            const activeRole = window.sessionStorage.getItem('placxia:auth-role');
+            if (activeRole && event.detail?.role && activeRole !== event.detail.role) return;
+            dispatch(logout());
+            if (location.pathname === '/dashboard' || location.pathname.startsWith('/profile')) {
+                navigate('/login', { replace: true });
+            }
+        };
+        window.addEventListener('placxia:login', onLogin);
+        window.addEventListener('placxia:logout', onLogout);
+        return () => {
+            window.removeEventListener('placxia:login', onLogin);
+            window.removeEventListener('placxia:logout', onLogout);
+        };
+    }, [dispatch, location.pathname, navigate]);
 
     useEffect(() => {
         let active = true;
@@ -26,8 +55,8 @@ function Layout() {
         }
 
         const handleExpiredSession = () => {
-            dispatch(logout());
-            navigate('/login', { replace: true });
+            const role = window.sessionStorage.getItem('placxia:auth-role');
+            announceLogout(role);
         };
 
         window.addEventListener('placxia:session-expired', handleExpiredSession);
@@ -36,7 +65,10 @@ function Layout() {
         setSessionError('');
         axios.get('/api/v1/auth/current-user', { withCredentials: true })
         .then((response) => {
-            if (active) dispatch(login({ userData: response.data.data }));
+            if (active) {
+                setActiveAuthRole(response.data.data.role);
+                dispatch(login({ userData: response.data.data }));
+            }
         })
         .catch((error) => {
             if (!active) return;

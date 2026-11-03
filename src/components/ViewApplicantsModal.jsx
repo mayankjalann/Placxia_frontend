@@ -18,35 +18,59 @@ const ViewApplicantsModal = ({ isOpen, onClose, jobId }) => {
     const [savingRoundFor, setSavingRoundFor] = useState(null);
 
     useEffect(() => {
-        if (isOpen && jobId) {
-            const fetchApplicants = async () => {
-                setLoading(true);
+        if (!isOpen || !jobId) return undefined;
+        let active = true;
+        let requestController;
+        let requestInFlight = false;
+        const fetchApplicants = async (initial = false) => {
+                if (requestInFlight) return;
+                requestInFlight = true;
+                requestController?.abort();
+                requestController = new AbortController();
+                if (initial) setLoading(true);
                 setError('');
                 setOfferError('');
                 setPipelineError('');
                 try {
                     const response = await axios.get(`/api/v1/application/getJobApplicants/${jobId}`, {
-                        withCredentials: true
+                        withCredentials: true,
+                        signal: requestController.signal,
                     });
+                    if (!active) return;
                     setApplicants(response.data.data);
                     try {
                         const offersResponse = await axios.get('/api/v1/offer/getCompanyOffers', {
-                            withCredentials: true
+                            withCredentials: true,
+                            signal: requestController.signal,
                         });
+                        if (!active) return;
                         setOffersByApplication(Object.fromEntries(
                             offersResponse.data.data.map((offer) => [offer.application.toString(), offer])
                         ));
                     } catch (offerFetchError) {
+                        if (!active || axios.isCancel(offerFetchError)) return;
                         setOfferError(offerFetchError.response?.data?.message || 'Could not load existing offers.');
                     }
                 } catch (err) {
+                    if (!active || axios.isCancel(err)) return;
                     setError(err.response?.data?.message || "Failed to load applicants.");
                 } finally {
-                    setLoading(false);
+                    requestInFlight = false;
+                    if (active && initial) setLoading(false);
                 }
-            };
-            fetchApplicants();
-        }
+        };
+        fetchApplicants(true);
+        const timer = window.setInterval(() => {
+            if (document.visibilityState === 'visible') fetchApplicants();
+        }, 30000);
+        const refreshIfVisible = () => { if (document.visibilityState === 'visible') fetchApplicants(); };
+        window.addEventListener('focus', refreshIfVisible);
+        return () => {
+            active = false;
+            requestController?.abort();
+            window.clearInterval(timer);
+            window.removeEventListener('focus', refreshIfVisible);
+        };
     }, [isOpen, jobId]);
 
     const visibleApplicants = applicants.filter((app) => {
@@ -207,19 +231,22 @@ const ViewApplicantsModal = ({ isOpen, onClose, jobId }) => {
                                         
                                         <button 
                                             onClick={() => handleUpdateStatus(app._id, 'SHORTLISTED')}
-                                            className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-medium rounded-full transition-colors flex-1 md:flex-none"
+                                            disabled={app.status !== 'APPLIED'}
+                                            className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-medium rounded-full transition-colors flex-1 md:flex-none disabled:cursor-not-allowed disabled:opacity-40"
                                         >
                                             Shortlist
                                         </button>
                                         <button 
                                             onClick={() => handleUpdateStatus(app._id, 'SELECTED')}
-                                            className="px-6 py-3 bg-white hover:bg-zinc-200 text-black text-sm font-bold rounded-full transition-colors flex-1 md:flex-none shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+                                            disabled={app.status !== 'SHORTLISTED'}
+                                            className="px-6 py-3 bg-white hover:bg-zinc-200 text-black text-sm font-bold rounded-full transition-colors flex-1 md:flex-none shadow-[0_0_20px_rgba(255,255,255,0.2)] disabled:cursor-not-allowed disabled:opacity-40"
                                         >
                                             Hire / Select
                                         </button>
                                         <button 
                                             onClick={() => handleUpdateStatus(app._id, 'REJECTED')}
-                                            className="px-6 py-3 bg-red-950/50 hover:bg-red-900 text-red-400 text-sm font-medium rounded-full transition-colors border border-red-900/30 flex-1 md:flex-none"
+                                            disabled={['SELECTED', 'REJECTED'].includes(app.status)}
+                                            className="px-6 py-3 bg-red-950/50 hover:bg-red-900 text-red-400 text-sm font-medium rounded-full transition-colors border border-red-900/30 flex-1 md:flex-none disabled:cursor-not-allowed disabled:opacity-40"
                                         >
                                             Reject
                                         </button>

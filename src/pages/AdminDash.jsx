@@ -31,6 +31,7 @@ const AdminDash = () => {
                 withCredentials: true 
             });
             setCompanies(response.data.data);
+            setError('');
             setLoading(false);
         } catch (err) {
             setError(err.response?.data?.message || "Failed to load pending companies");
@@ -39,7 +40,6 @@ const AdminDash = () => {
     };
 
     const fetchAnalytics = useCallback(async () => {
-        setAnalyticsLoading(true);
         setAnalyticsError('');
         try {
             const response = await axios.get('/api/v1/admin/analytics', { withCredentials: true });
@@ -90,6 +90,19 @@ const AdminDash = () => {
     useEffect(() => {
         fetchPendingCompanies();
         fetchAnalytics();
+        const refreshIfVisible = () => {
+            if (document.visibilityState !== 'visible') return;
+            fetchPendingCompanies();
+            fetchAnalytics();
+        };
+        const timer = window.setInterval(refreshIfVisible, 30000);
+        window.addEventListener('focus', refreshIfVisible);
+        document.addEventListener('visibilitychange', refreshIfVisible);
+        return () => {
+            window.clearInterval(timer);
+            window.removeEventListener('focus', refreshIfVisible);
+            document.removeEventListener('visibilitychange', refreshIfVisible);
+        };
     }, [fetchAnalytics]);
 
     const handleCsvFile = async (event) => {

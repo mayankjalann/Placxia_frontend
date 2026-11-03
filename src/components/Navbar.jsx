@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { logout } from '../store/authSlice';
 import NotificationBell from './NotificationBell';
+import { announceLogout } from '../api/authSync';
 
 const Navbar = () => {
    
@@ -14,16 +15,17 @@ const Navbar = () => {
     const navigate = useNavigate();
     
     const handleLogout = async () => {
+        const role = userData?.role;
         try {
             await axios.post('/api/v1/auth/logout', {}, {
                 withCredentials: true
             });
-            navigate('/');
-            setTimeout(() => {
-                dispatch(logout());
-            }, 100);
+            dispatch(logout());
+            announceLogout(role);
+            navigate('/', { replace: true });
         } catch {
             dispatch(logout());
+            announceLogout(role);
             navigate('/', { replace: true });
         }
     };

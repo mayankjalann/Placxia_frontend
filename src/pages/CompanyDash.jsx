@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'motion/react';
 import PostJobModal from '../components/PostJobModal';
 import ViewApplicantsModal from '../components/ViewApplicantsModal';
 import { useToast } from '../components/ToastContext';
+import { login } from '../store/authSlice';
 
 const CompanyDash = () => {
     const userData = useSelector((state) => state.auth.userData);
+    const dispatch = useDispatch();
     const toast = useToast();
     
     const [jobs, setJobs] = useState([]);
@@ -39,6 +41,15 @@ const CompanyDash = () => {
         }
     };
 
+    const refreshCompanyProfile = useCallback(async () => {
+        try {
+            const response = await axios.get('/api/v1/auth/current-user', { withCredentials: true });
+            dispatch(login({ userData: response.data.data }));
+        } catch {
+            // Job refresh reports availability errors; keep the last known profile on transient failures.
+        }
+    }, [dispatch]);
+
     const handlePublish = async (jobId) => {
         try {
             await axios.patch(`/api/v1/job/publish/${jobId}`, {}, { withCredentials: true });
@@ -65,7 +76,21 @@ const CompanyDash = () => {
 
     useEffect(() => {
         fetchCompanyJobs();
-    }, []);
+        refreshCompanyProfile();
+        const refreshIfVisible = () => {
+            if (document.visibilityState !== 'visible') return;
+            fetchCompanyJobs();
+            refreshCompanyProfile();
+        };
+        const timer = window.setInterval(refreshIfVisible, 30000);
+        window.addEventListener('focus', refreshIfVisible);
+        document.addEventListener('visibilitychange', refreshIfVisible);
+        return () => {
+            window.clearInterval(timer);
+            window.removeEventListener('focus', refreshIfVisible);
+            document.removeEventListener('visibilitychange', refreshIfVisible);
+        };
+    }, [refreshCompanyProfile]);
 
     const activePostings = jobs.filter(j => j.status === 'OPEN').length;
 

@@ -29,41 +29,50 @@ const StudentDash = () => {
     const [actionMessage, setActionMessage] = useState('');
     const [respondingToOffer, setRespondingToOffer] = useState(null);
     const [selectedJobId, setSelectedJobId] = useState(null);
+    const authenticatedUserId = userData?._id;
 
     useEffect(() => {
+        if (!authenticatedUserId) { navigate('/login'); return undefined; }
+        let mounted = true;
+        let loadingInitial = true;
         const fetchDashboardData = async () => {
-            try {
-                const [jobsRes, appsRes, offersRes, savedRes] = await Promise.all([
-                    axios.get('/api/v1/job/getAllOpenJobs', { withCredentials: true }),
-                    axios.get('/api/v1/application/getMyApplications', { withCredentials: true }),
-                    axios.get('/api/v1/offer/getStudentOffers', { withCredentials: true }),
-                    axios.get('/api/v1/job/saved', { withCredentials: true })
-                ]);
-                
-                setJobs(jobsRes.data.data);
-                
+            const results = await Promise.allSettled([
+                axios.get('/api/v1/job/getAllOpenJobs', { withCredentials: true }),
+                axios.get('/api/v1/application/getMyApplications', { withCredentials: true }),
+                axios.get('/api/v1/offer/getStudentOffers', { withCredentials: true }),
+                axios.get('/api/v1/job/saved', { withCredentials: true }),
+                axios.get('/api/v1/auth/current-user', { withCredentials: true })
+            ]);
+            if (!mounted) return;
+            const [jobsRes, appsRes, offersRes, savedRes, userRes] = results.map((result) => result.status === 'fulfilled' ? result.value : null);
+            if (jobsRes) setJobs(jobsRes.data.data);
+            if (appsRes) {
                 const myApps = appsRes.data.data;
                 setMyApplications(myApps);
-                setOffers(offersRes.data.data);
-                setSavedJobIds(new Set(savedRes.data.data.map((job) => job._id)));
-
-                // app.job is now populated, so we must extract app.job._id
-                const appliedIds = new Set(myApps.map(app => app.job?._id || app.job));
-                setAppliedJobs(appliedIds);
-                
-                setLoading(false);
-            } catch (err) {
-                setError(err.response?.data?.message || "Failed to load jobs");
-                setLoading(false);
+                setAppliedJobs(new Set(myApps.map((app) => app.job?._id || app.job)));
             }
-        }
-
-        if (userData) {
-            fetchDashboardData();
-        } else {
-            navigate('/login');
-        }
-    }, [userData, navigate])
+            if (offersRes) setOffers(offersRes.data.data);
+            if (savedRes) setSavedJobIds(new Set(savedRes.data.data.map((job) => job._id)));
+            if (userRes) dispatch(login({ userData: userRes.data.data }));
+            if (results.slice(0, 4).every((result) => result.status === 'rejected')) {
+                setError(results[0].reason?.response?.data?.message || 'Could not load dashboard data.');
+            } else {
+                setError('');
+            }
+            if (loadingInitial) { setLoading(false); loadingInitial = false; }
+        };
+        const refreshIfVisible = () => { if (document.visibilityState === 'visible') fetchDashboardData(); };
+        fetchDashboardData();
+        const timer = window.setInterval(refreshIfVisible, 30000);
+        window.addEventListener('focus', refreshIfVisible);
+        document.addEventListener('visibilitychange', refreshIfVisible);
+        return () => {
+            mounted = false;
+            window.clearInterval(timer);
+            window.removeEventListener('focus', refreshIfVisible);
+            document.removeEventListener('visibilitychange', refreshIfVisible);
+        };
+    }, [authenticatedUserId, navigate, dispatch])
 
     const filteredJobs = jobs.filter((job) => {
         const query = searchTerm.trim().toLowerCase();
@@ -200,7 +209,7 @@ const StudentDash = () => {
                     </div>
                     <div className="flex flex-col">
                         <span className="text-sm font-semibold tracking-widest uppercase text-zinc-500 mb-2">Open Positions</span>
-                        <span className="text-5xl font-serif italic text-white/90">{jobs.length}</span>
+                        <span className="text-5xl font-serif italic text-white/90">{jobs.reduce((total, job) => total + (Number(job.positionsAvailable) || 0), 0)}</span>
                     </div>
                     <div className="flex flex-col">
                         <span className="text-sm font-semibold tracking-widest uppercase text-zinc-500 mb-2">Profile Integrity</span>

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useDispatch } from 'react-redux';
 import { login } from '../store/authSlice';
 import { useNavigate } from 'react-router-dom';
+import { announceLogin } from '../api/authSync';
 
 const Login = () => {
     const [email,setEmail]=useState('');
@@ -23,6 +24,7 @@ const Login = () => {
 
             const userData=response.data.data.user;
 
+            announceLogin(userData.role);
             dispatch(login({userData}));
 
             navigate('/dashboard');

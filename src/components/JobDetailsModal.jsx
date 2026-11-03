@@ -7,22 +7,26 @@ const JobDetailsModal = ({ jobId, onClose, hasApplied, onApply }) => {
     const [error, setError] = useState('');
 
     useEffect(() => {
+        const controller = new AbortController();
+        let active = true;
         const fetchDetails = async () => {
             setLoading(true);
             setError('');
             setJobDetails(null);
             try {
                 const response = await axios.get(`/api/v1/job/getJobById/${jobId}`, {
-                    withCredentials: true
+                    withCredentials: true,
+                    signal: controller.signal,
                 });
-                setJobDetails(response.data.data);
+                if (active) setJobDetails(response.data.data);
             } catch (err) {
-                setError(err.response?.data?.message || "Failed to load job details");
+                if (active && !axios.isCancel(err)) setError(err.response?.data?.message || "Failed to load job details");
             } finally {
-                setLoading(false);
+                if (active) setLoading(false);
             }
         };
         fetchDetails();
+        return () => { active = false; controller.abort(); };
     }, [jobId]);
 
     return (
