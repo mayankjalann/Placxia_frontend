@@ -1,10 +1,11 @@
-import React, { lazy, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { lazyWithRecovery } from '../utils/lazyWithRecovery.js';
 
-const StudentDash = lazy(() => import('./StudentDash.jsx'));
-const CompanyDash = lazy(() => import('./CompanyDash.jsx'));
-const AdminDash = lazy(() => import('./AdminDash.jsx'));
+const StudentDash = lazyWithRecovery(() => import('./StudentDash.jsx'));
+const CompanyDash = lazyWithRecovery(() => import('./CompanyDash.jsx'));
+const AdminDash = lazyWithRecovery(() => import('./AdminDash.jsx'));
 
 const Dashboard = () => {
     const userData = useSelector((state) => state.auth.userData);
