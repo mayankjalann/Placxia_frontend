@@ -84,9 +84,7 @@ const ViewApplicantsModal = ({ isOpen, onClose, jobId }) => {
         setRoundDrafts((previous) => ({
             ...previous,
             [application._id]: {
-                roundNo: application.rounds?.length ? Math.max(...application.rounds.map((round) => round.roundNo)) + 1 : 1,
                 roundType: 'TECHNICAL',
-                result: 'PENDING',
                 ...previous[application._id],
                 [field]: value,
             },
@@ -99,17 +97,36 @@ const ViewApplicantsModal = ({ isOpen, onClose, jobId }) => {
             setPipelineError('Choose the interview date and time before saving.');
             return;
         }
+        const roundNo = (application.rounds || []).reduce((highest, round) => Math.max(highest, round.roundNo), 0) + 1;
         setSavingRoundFor(application._id);
         setPipelineError('');
         try {
             const response = await axios.patch(`/api/v1/application/${application._id}/rounds`, {
                 ...draft,
+                roundNo,
                 scheduledAt: new Date(draft.scheduledAt).toISOString(),
             }, { withCredentials: true });
             setApplicants((previous) => previous.map((item) => item._id === application._id ? response.data.data : item));
-            setRoundDrafts((previous) => ({ ...previous, [application._id]: { ...draft, roundNo: Number(draft.roundNo) + 1, scheduledAt: '' } }));
+            setRoundDrafts((previous) => ({ ...previous, [application._id]: { roundType: draft.roundType || 'TECHNICAL', scheduledAt: '', interviewerName: '' } }));
         } catch (err) {
             setPipelineError(err.response?.data?.message || 'Could not save the interview round.');
+        } finally {
+            setSavingRoundFor(null);
+        }
+    };
+
+    const recordRoundResult = async (application, round, result) => {
+        setSavingRoundFor(application._id);
+        setPipelineError('');
+        try {
+            const response = await axios.patch(
+                `/api/v1/application/${application._id}/rounds/${round.roundNo}/result`,
+                { result },
+                { withCredentials: true }
+            );
+            setApplicants((previous) => previous.map((item) => item._id === application._id ? response.data.data : item));
+        } catch (err) {
+            setPipelineError(err.response?.data?.message || 'Could not update this round result.');
         } finally {
             setSavingRoundFor(null);
         }
@@ -230,40 +247,45 @@ const ViewApplicantsModal = ({ isOpen, onClose, jobId }) => {
                                         )}
                                         
                                         <button 
-                                            onClick={() => handleUpdateStatus(app._id, 'SHORTLISTED')}
-                                            disabled={app.status !== 'APPLIED'}
-                                            className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-medium rounded-full transition-colors flex-1 md:flex-none disabled:cursor-not-allowed disabled:opacity-40"
-                                        >
-                                            Shortlist
-                                        </button>
-                                        <button 
                                             onClick={() => handleUpdateStatus(app._id, 'SELECTED')}
-                                            disabled={app.status !== 'SHORTLISTED'}
+                                            disabled={app.status !== 'SHORTLISTED' || app.rounds?.some((round) => round.result === 'PENDING')}
                                             className="px-6 py-3 bg-white hover:bg-zinc-200 text-black text-sm font-bold rounded-full transition-colors flex-1 md:flex-none shadow-[0_0_20px_rgba(255,255,255,0.2)] disabled:cursor-not-allowed disabled:opacity-40"
                                         >
                                             Hire / Select
                                         </button>
-                                        <button 
-                                            onClick={() => handleUpdateStatus(app._id, 'REJECTED')}
-                                            disabled={['SELECTED', 'REJECTED'].includes(app.status)}
-                                            className="px-6 py-3 bg-red-950/50 hover:bg-red-900 text-red-400 text-sm font-medium rounded-full transition-colors border border-red-900/30 flex-1 md:flex-none disabled:cursor-not-allowed disabled:opacity-40"
-                                        >
-                                            Reject
-                                        </button>
                                     </div>
 
                                     <details className="w-full rounded-xl border border-white/10 bg-black/30 p-4">
-                                        <summary className="cursor-pointer text-sm font-semibold text-white">Interview rounds ({app.rounds?.length || 0})</summary>
-                                        {app.rounds?.length > 0 && <ol className="my-4 space-y-2">{app.rounds.map((round) => <li key={round._id || round.roundNo} className="rounded-lg bg-zinc-900 p-3 text-xs text-zinc-300">Round {round.roundNo} · {round.roundType} · {round.result}{round.scheduledAt ? ` · ${new Date(round.scheduledAt).toLocaleString()}` : ''}{round.interviewerName ? ` · ${round.interviewerName}` : ''}</li>)}</ol>}
-                                        <div className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-2">
-                                            <input type="number" min="1" aria-label="Round number" value={roundDrafts[app._id]?.roundNo ?? (app.rounds?.length ? Math.max(...app.rounds.map((round) => round.roundNo)) + 1 : 1)} onChange={(event) => updateRoundDraft(app, 'roundNo', event.target.value)} className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white" />
-                                            <select aria-label="Round type" value={roundDrafts[app._id]?.roundType || 'TECHNICAL'} onChange={(event) => updateRoundDraft(app, 'roundType', event.target.value)} className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white"><option value="APTITUDE">Aptitude</option><option value="TECHNICAL">Technical</option><option value="HR">HR</option><option value="GD">Group discussion</option></select>
-                                            <input type="datetime-local" aria-label="Interview date and time" value={roundDrafts[app._id]?.scheduledAt || ''} onChange={(event) => updateRoundDraft(app, 'scheduledAt', event.target.value)} className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white [color-scheme:dark]" />
-                                            <input aria-label="Interviewer name" placeholder="Interviewer name" value={roundDrafts[app._id]?.interviewerName || ''} onChange={(event) => updateRoundDraft(app, 'interviewerName', event.target.value)} className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white" />
-                                            <select aria-label="Round result" value={roundDrafts[app._id]?.result || 'PENDING'} onChange={(event) => updateRoundDraft(app, 'result', event.target.value)} className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white"><option value="PENDING">Pending</option><option value="PASS">Pass</option><option value="FAIL">Fail</option></select>
-                                            <input aria-label="Interview feedback" placeholder="Feedback (optional)" value={roundDrafts[app._id]?.feedback || ''} onChange={(event) => updateRoundDraft(app, 'feedback', event.target.value)} className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white" />
-                                        </div>
-                                        <button type="button" onClick={() => saveInterviewRound(app)} disabled={savingRoundFor === app._id || app.status === 'REJECTED'} className="mt-3 rounded-full bg-indigo-300 px-5 py-2 text-sm font-semibold text-black disabled:opacity-50">{savingRoundFor === app._id ? 'Saving…' : 'Save round and notify student'}</button>
+                                        <summary className="cursor-pointer text-sm font-semibold text-white">Interview pipeline · {app.rounds?.length || 0} rounds</summary>
+                                        {app.rounds?.length > 0 && <ol className="my-4 space-y-2">{[...app.rounds].sort((a, b) => a.roundNo - b.roundNo).map((round) => <li key={round._id || round.roundNo} className="rounded-lg bg-zinc-900 p-3 text-sm text-zinc-300"><span className="font-semibold text-white">Round {round.roundNo} · {round.roundType}</span><span className="ml-2 text-xs uppercase tracking-wide">{round.result === 'PASS' ? 'Passed' : round.result === 'FAIL' ? 'Not progressed' : 'Awaiting result'}</span>{round.scheduledAt && <span className="mt-1 block text-xs text-zinc-400">{new Date(round.scheduledAt).toLocaleString()}{round.interviewerName ? ` · ${round.interviewerName}` : ''}</span>}</li>)}</ol>}
+                                        {(() => {
+                                            const rounds = app.rounds || [];
+                                            const latestRound = [...rounds].sort((a, b) => b.roundNo - a.roundNo)[0];
+                                            const canSchedule = !['REJECTED', 'SELECTED'].includes(app.status) && (!latestRound || (latestRound.result === 'PASS' && rounds.every((round) => round.result === 'PASS')));
+                                            const pendingRound = latestRound?.result === 'PENDING' ? latestRound : null;
+                                            return (
+                                                <>
+                                                    {pendingRound && app.status !== 'REJECTED' && (
+                                                        <div className="mt-4 flex flex-wrap gap-2">
+                                                            <button type="button" onClick={() => recordRoundResult(app, pendingRound, 'PASS')} disabled={savingRoundFor === app._id} className="rounded-full bg-emerald-300 px-5 py-2 text-sm font-semibold text-black disabled:opacity-50">Pass & continue</button>
+                                                            <button type="button" onClick={() => recordRoundResult(app, pendingRound, 'FAIL')} disabled={savingRoundFor === app._id} className="rounded-full border border-rose-500/40 px-5 py-2 text-sm font-semibold text-rose-300 disabled:opacity-50">Reject candidate</button>
+                                                        </div>
+                                                    )}
+                                                    {canSchedule && (
+                                                        <>
+                                                            <p className="mt-4 text-sm font-medium text-zinc-300">Schedule Round {rounds.reduce((highest, round) => Math.max(highest, round.roundNo), 0) + 1}</p>
+                                                            <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-3">
+                                                                <select aria-label="Round type" value={roundDrafts[app._id]?.roundType || 'TECHNICAL'} onChange={(event) => updateRoundDraft(app, 'roundType', event.target.value)} className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white"><option value="APTITUDE">Aptitude</option><option value="TECHNICAL">Technical</option><option value="HR">HR</option><option value="GD">Group discussion</option></select>
+                                                                <input type="datetime-local" aria-label="Interview date and time" value={roundDrafts[app._id]?.scheduledAt || ''} onChange={(event) => updateRoundDraft(app, 'scheduledAt', event.target.value)} className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white [color-scheme:dark]" />
+                                                                <input aria-label="Interviewer name" placeholder="Interviewer (optional)" value={roundDrafts[app._id]?.interviewerName || ''} onChange={(event) => updateRoundDraft(app, 'interviewerName', event.target.value)} className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white" />
+                                                            </div>
+                                                            <button type="button" onClick={() => saveInterviewRound(app)} disabled={savingRoundFor === app._id} className="mt-3 rounded-full bg-indigo-300 px-5 py-2 text-sm font-semibold text-black disabled:opacity-50">{savingRoundFor === app._id ? 'Saving…' : 'Schedule round'}</button>
+                                                        </>
+                                                    )}
+                                                    {!['REJECTED', 'SELECTED'].includes(app.status) && !pendingRound && <button type="button" onClick={() => handleUpdateStatus(app._id, 'REJECTED')} className="mt-3 rounded-full border border-rose-500/40 px-5 py-2 text-sm font-semibold text-rose-300">Reject candidate</button>}
+                                                </>
+                                            );
+                                        })()}
                                     </details>
 
                                     {app.status === 'SELECTED' && (
