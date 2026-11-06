@@ -15,31 +15,17 @@ function Layout() {
     const [retryCount, setRetryCount] = useState(0);
 
     useEffect(() => {
-        const onLogin = async (event) => {
-            try {
-                const response = await axios.get('/api/v1/auth/current-user', { withCredentials: true });
-                if (response.data.data.role !== event.detail?.role) return;
-                setActiveAuthRole(response.data.data.role);
-                dispatch(login({ userData: response.data.data }));
-                if (location.pathname === '/login') navigate('/dashboard', { replace: true });
-            } catch {
-                // The tab may have received a login notice while cookies were still updating.
-            }
-        };
         const onLogout = (event) => {
             const activeRole = window.sessionStorage.getItem('placxia:auth-role');
-            if (activeRole && event.detail?.role && activeRole !== event.detail.role) return;
+            if (!event.detail?.local && activeRole !== event.detail?.role) return;
+            window.sessionStorage.removeItem('placxia:auth-role');
             dispatch(logout());
             if (location.pathname === '/dashboard' || location.pathname.startsWith('/profile')) {
                 navigate('/login', { replace: true });
             }
         };
-        window.addEventListener('placxia:login', onLogin);
         window.addEventListener('placxia:logout', onLogout);
-        return () => {
-            window.removeEventListener('placxia:login', onLogin);
-            window.removeEventListener('placxia:logout', onLogout);
-        };
+        return () => window.removeEventListener('placxia:logout', onLogout);
     }, [dispatch, location.pathname, navigate]);
 
     useEffect(() => {

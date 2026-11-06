@@ -4,10 +4,16 @@ const API_BASE_URL = '/api/v1';
 const REFRESH_URL = `${API_BASE_URL}/auth/refresh-token`;
 let refreshPromise = null;
 const refreshWithCrossTabLock = () => {
-    const refresh = () => axios.post(REFRESH_URL, {}, { withCredentials: true });
+    const refresh = () => axios.post(REFRESH_URL, {}, { withCredentials: true }).then((response) => {
+        const role = response.data?.data?.role;
+        if (role && typeof window !== 'undefined') {
+            window.sessionStorage.setItem('placxia:auth-role', role);
+        }
+        return response;
+    });
     if (typeof navigator !== 'undefined' && navigator.locks?.request) {
         const role = typeof window !== 'undefined'
-            ? (window.sessionStorage.getItem('placxia:auth-role') || window.localStorage.getItem('placxia:auth-role') || 'unknown')
+            ? (window.sessionStorage.getItem('placxia:auth-role') || 'unknown')
             : 'unknown';
         return navigator.locks.request(`placxia-refresh-${role}`, refresh);
     }
@@ -18,7 +24,7 @@ axios.defaults.withCredentials = true;
 
 axios.interceptors.request.use((request) => {
     if (typeof window !== 'undefined') {
-        const role = window.sessionStorage.getItem('placxia:auth-role') || window.localStorage.getItem('placxia:auth-role');
+        const role = window.sessionStorage.getItem('placxia:auth-role');
         if (role) request.headers['X-Auth-Role'] = role;
     }
     return request;
