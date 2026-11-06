@@ -21,11 +21,6 @@ const StudentDash = () => {
     const [myApplications, setMyApplications] = useState([]);
     const [offers, setOffers] = useState([]);
     const [savedJobIds, setSavedJobIds] = useState(new Set());
-    const [searchTerm, setSearchTerm] = useState('');
-    const [jobTypeFilter, setJobTypeFilter] = useState('');
-    const [locationFilter, setLocationFilter] = useState('');
-    const [minimumSalary, setMinimumSalary] = useState('');
-    const [savedOnly, setSavedOnly] = useState(false);
     const [actionMessage, setActionMessage] = useState('');
     const [respondingToOffer, setRespondingToOffer] = useState(null);
     const [selectedJobId, setSelectedJobId] = useState(null);
@@ -73,16 +68,6 @@ const StudentDash = () => {
             document.removeEventListener('visibilitychange', refreshIfVisible);
         };
     }, [authenticatedUserId, navigate, dispatch])
-
-    const filteredJobs = jobs.filter((job) => {
-        const query = searchTerm.trim().toLowerCase();
-        const matchesSearch = !query || [job.title, job.description, job.company?.name, job.location, ...(job.requiredSkills || [])]
-            .some((value) => value?.toLowerCase().includes(query));
-        return matchesSearch && (!jobTypeFilter || job.jobType === jobTypeFilter) &&
-            (!locationFilter || job.location?.toLowerCase().includes(locationFilter.toLowerCase())) &&
-            (!minimumSalary || job.ctcMax >= Number(minimumSalary)) &&
-            (!savedOnly || savedJobIds.has(job._id));
-    });
 
     const toggleSaveJob = async (jobId) => {
         setActionMessage('');
@@ -304,29 +289,18 @@ const StudentDash = () => {
 
                 {loading && <p className="text-zinc-500 animate-pulse text-lg">Indexing network...</p>}
                 {error && <p className="text-red-400 p-4 bg-red-950/20 border border-red-900/30 rounded-xl">{error}</p>}
-                <div className="mb-8 grid grid-cols-1 gap-3 rounded-2xl border border-white/10 bg-zinc-950 p-4 md:grid-cols-4">
-                    <input aria-label="Search jobs" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Search role, company, skill" className="rounded-xl border border-white/10 bg-zinc-900 px-4 py-3 text-sm text-white placeholder:text-zinc-500" />
-                    <select aria-label="Filter by job type" value={jobTypeFilter} onChange={(event) => setJobTypeFilter(event.target.value)} className="rounded-xl border border-white/10 bg-zinc-900 px-4 py-3 text-sm text-white">
-                        <option value="">All job types</option><option value="FULL_TIME">Full time</option><option value="INTERN">Internship</option><option value="PPO">PPO</option>
-                    </select>
-                    <input aria-label="Filter by location" value={locationFilter} onChange={(event) => setLocationFilter(event.target.value)} placeholder="Location" className="rounded-xl border border-white/10 bg-zinc-900 px-4 py-3 text-sm text-white placeholder:text-zinc-500" />
-                    <input aria-label="Minimum package" type="number" min="0" value={minimumSalary} onChange={(event) => setMinimumSalary(event.target.value)} placeholder="Minimum package (LPA)" className="rounded-xl border border-white/10 bg-zinc-900 px-4 py-3 text-sm text-white placeholder:text-zinc-500" />
-                </div>
-                <button type="button" aria-pressed={savedOnly} onClick={() => setSavedOnly((value) => !value)} className={`mb-6 rounded-full border px-5 py-2.5 text-sm ${savedOnly ? 'border-amber-300 bg-amber-300 text-black' : 'border-white/15 text-white hover:bg-white/5'}`}>
-                    {savedOnly ? 'Showing saved jobs · Clear' : `Saved jobs (${savedJobIds.size})`}
-                </button>
                 {actionMessage && <p role="status" className="mb-5 text-sm text-rose-300">{actionMessage}</p>}
 
                 {!loading && !error && (
                     <>
-                        {filteredJobs.length === 0 ? (
+                        {jobs.length === 0 ? (
                             <div className="w-full bg-zinc-950 border border-white/5 rounded-[2rem] p-16 md:p-32 flex flex-col items-center justify-center text-center">
-                                <h3 className="text-3xl font-bold tracking-tight mb-4 text-white/80">No matching opportunities</h3>
-                                <p className="text-zinc-500 text-lg max-w-[30ch]">Try clearing one or more filters to see available roles.</p>
+                                <h3 className="text-3xl font-bold tracking-tight mb-4 text-white/80">No open opportunities right now</h3>
+                                <p className="text-zinc-500 text-lg max-w-[30ch]">New company listings will appear here when they open.</p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                {filteredJobs.map((job, index) => (
+                                {jobs.map((job, index) => (
                                     <motion.div 
                                         key={job._id}
                                         initial={{ opacity: 0, y: 40 }}
@@ -347,6 +321,7 @@ const StudentDash = () => {
                                             <div className="mt-auto relative z-10 transition-transform duration-500 group-hover:-translate-y-16">
                                                 <h3 className="text-2xl font-bold tracking-tight text-white/90 mb-2">{job.title}</h3>
                                                 <div className="text-zinc-500 text-sm mb-4 font-semibold tracking-wider uppercase">{job.company?.name || 'Undisclosed'}</div>
+                                                {job.eligibilityReason && <p className="mb-3 text-xs leading-relaxed text-amber-300">{job.eligibilityReason}</p>}
                                                 
                                                 <div className="flex gap-4 text-sm text-zinc-400 border-t border-white/5 pt-4">
                                                     <span>{job.location}</span>
@@ -364,14 +339,10 @@ const StudentDash = () => {
                                                 </button>
                                                 <button 
                                                     onClick={() => handleApply(job._id)}
-                                                    disabled={appliedJobs.has(job._id)}
-                                                    className={`px-6 py-3 text-sm font-semibold rounded-full transition-colors flex-[2] ${
-                                                        appliedJobs.has(job._id) 
-                                                        ? "bg-zinc-800/50 text-zinc-500 cursor-not-allowed border border-white/5" 
-                                                        : "bg-white text-black hover:bg-zinc-200"
-                                                    }`}
+                                                    disabled={appliedJobs.has(job._id) || Boolean(job.eligibilityReason)}
+                                                    className={`px-6 py-3 text-sm font-semibold rounded-full transition-colors flex-[2] ${appliedJobs.has(job._id) || job.eligibilityReason ? "bg-zinc-800/50 text-zinc-500 cursor-not-allowed border border-white/5" : "bg-white text-black hover:bg-zinc-200"}`}
                                                 >
-                                                    {appliedJobs.has(job._id) ? "Applied" : "Apply Now"}
+                                                    {appliedJobs.has(job._id) ? "Applied" : job.eligibilityReason ? "Not Eligible" : "Apply Now"}
                                                 </button>
                                             </div>
                                         </div>
@@ -388,6 +359,7 @@ const StudentDash = () => {
                     jobId={selectedJobId} 
                     onClose={() => setSelectedJobId(null)}
                     hasApplied={appliedJobs.has(selectedJobId)}
+                    eligibilityReason={jobs.find((job) => job._id === selectedJobId)?.eligibilityReason}
                     onApply={handleApply}
                 />
             )}

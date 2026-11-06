@@ -19,11 +19,7 @@ const PostJobModal = ({ isOpen, onClose, onJobPosted, editJob = null }) => {
         ctcMin: 0,
         ctcMax: 0,
         cgpaCutoff: 0,
-        tenthCutoff: 0,
-        twelfthCutoff: 0,
-        requiredSkills: '',
-        allowedBranches: '',
-        batchEligible: '',
+        allowedBranches: [],
         eligibleColleges: [] // NOW AN ARRAY!
     });
     
@@ -44,17 +40,13 @@ const PostJobModal = ({ isOpen, onClose, onJobPosted, editJob = null }) => {
                 ctcMin: editJob.ctcMin,
                 ctcMax: editJob.ctcMax,
                 cgpaCutoff: editJob.cgpaCutoff || 0,
-                tenthCutoff: editJob.tenthCutoff || 0,
-                twelfthCutoff: editJob.twelfthCutoff || 0,
-                requiredSkills: editJob.requiredSkills?.join(', ') || '',
-                allowedBranches: editJob.allowedBranches?.join(', ') || '',
-                batchEligible: editJob.batchEligible?.join(', ') || '',
+                allowedBranches: editJob.allowedBranches || [],
                 eligibleColleges: editJob.eligibleColleges || []
             });
         } else {
             setFormData({
                 title: '', description: '', positionsAvailable: 1, jobType: 'FULL_TIME', deadline: '', ctcMin: 0, ctcMax: 0,
-                cgpaCutoff: 0, tenthCutoff: 0, twelfthCutoff: 0, requiredSkills: '', allowedBranches: '', batchEligible: '', eligibleColleges: []
+                cgpaCutoff: 0, allowedBranches: [], eligibleColleges: []
             });
         }
         setError('');
@@ -89,6 +81,15 @@ const PostJobModal = ({ isOpen, onClose, onJobPosted, editJob = null }) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    const toggleBranch = (branch) => {
+        setFormData((current) => ({
+            ...current,
+            allowedBranches: current.allowedBranches.includes(branch)
+                ? current.allowedBranches.filter((item) => item !== branch)
+                : [...current.allowedBranches, branch],
+        }));
+    };
+
     // CHECKBOX HANDLER! Adds or removes the college ID from the array
     const handleCheckboxChange = (collegeId) => {
         setFormData((prev) => {
@@ -120,9 +121,6 @@ const PostJobModal = ({ isOpen, onClose, onJobPosted, editJob = null }) => {
         try {
             const payload = {
                 ...formData,
-                requiredSkills: formData.requiredSkills.split(',').map((item) => item.trim()).filter(Boolean),
-                allowedBranches: formData.allowedBranches.split(',').map((item) => item.trim().toUpperCase()).filter(Boolean),
-                batchEligible: formData.batchEligible.split(',').map((item) => item.trim()).filter(Boolean),
             };
             // We can just send formData directly now because eligibleColleges is natively an Array!
             if (editJob) {
@@ -211,15 +209,19 @@ const PostJobModal = ({ isOpen, onClose, onJobPosted, editJob = null }) => {
                     </div>
 
                     <section className="space-y-4 rounded-2xl border border-white/5 bg-zinc-900/40 p-5">
-                        <div><h3 className="font-semibold text-white">Eligibility and matching</h3><p className="mt-1 text-xs text-zinc-500">Students must meet the criteria you set here to view and apply.</p></div>
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                            <label className="text-xs uppercase tracking-widest text-zinc-400">Minimum CGPA<input type="number" name="cgpaCutoff" min="0" max="10" step="0.01" value={formData.cgpaCutoff} onChange={handleChange} className="mt-2 w-full rounded-xl border border-white/10 bg-zinc-900 p-3 text-white" /></label>
-                            <label className="text-xs uppercase tracking-widest text-zinc-400">10th cutoff %<input type="number" name="tenthCutoff" min="0" max="100" step="0.01" value={formData.tenthCutoff} onChange={handleChange} className="mt-2 w-full rounded-xl border border-white/10 bg-zinc-900 p-3 text-white" /></label>
-                            <label className="text-xs uppercase tracking-widest text-zinc-400">12th cutoff %<input type="number" name="twelfthCutoff" min="0" max="100" step="0.01" value={formData.twelfthCutoff} onChange={handleChange} className="mt-2 w-full rounded-xl border border-white/10 bg-zinc-900 p-3 text-white" /></label>
+                        <div><h3 className="font-semibold text-white">Eligibility</h3><p className="mt-1 text-xs text-zinc-500">Only selected branches and minimum CGPA affect who can apply. Leave branches empty to allow all branches.</p></div>
+                        <label className="block max-w-xs text-xs uppercase tracking-widest text-zinc-400">Minimum CGPA<input type="number" name="cgpaCutoff" min="0" max="10" step="0.01" value={formData.cgpaCutoff} onChange={handleChange} className="mt-2 w-full rounded-xl border border-white/10 bg-zinc-900 p-3 text-white" /></label>
+                        <div>
+                            <p className="mb-2 text-xs uppercase tracking-widest text-zinc-400">Eligible branches</p>
+                            <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                                {['CSE', 'IT', 'ECE', 'EE', 'ME', 'CE', 'OTHER'].map((branch) => (
+                                    <label key={branch} className="flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-zinc-200">
+                                        <input type="checkbox" checked={formData.allowedBranches.includes(branch)} onChange={() => toggleBranch(branch)} />
+                                        {branch}
+                                    </label>
+                                ))}
+                            </div>
                         </div>
-                        <input name="requiredSkills" value={formData.requiredSkills} onChange={handleChange} placeholder="Required skills, comma separated" className="w-full rounded-xl border border-white/10 bg-zinc-900 p-3 text-sm text-white" />
-                        <input name="allowedBranches" value={formData.allowedBranches} onChange={handleChange} placeholder="Branches (CSE, IT); leave blank for all" className="w-full rounded-xl border border-white/10 bg-zinc-900 p-3 text-sm text-white" />
-                        <input name="batchEligible" value={formData.batchEligible} onChange={handleChange} placeholder="Graduation batches (2026, 2027); leave blank for all" className="w-full rounded-xl border border-white/10 bg-zinc-900 p-3 text-sm text-white" />
                     </section>
 
                     <div className="grid grid-cols-2 gap-6">

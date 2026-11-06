@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const JobDetailsModal = ({ jobId, onClose, hasApplied, onApply }) => {
+const JobDetailsModal = ({ jobId, onClose, hasApplied, eligibilityReason, onApply }) => {
     const [jobDetails, setJobDetails] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -88,16 +88,9 @@ const JobDetailsModal = ({ jobId, onClose, hasApplied, onApply }) => {
                                 </div>
 
                                 <div>
-                                    <h3 className="text-sm font-semibold tracking-widest uppercase text-zinc-500 mb-4">Required Knowledge</h3>
+                                    <h3 className="text-sm font-semibold tracking-widest uppercase text-zinc-500 mb-4">Role details</h3>
                                     <div className="flex flex-wrap gap-2">
-                                        {jobDetails.requiredSkills?.map(skill => (
-                                            <span key={skill} className="px-4 py-2 bg-zinc-900 text-zinc-300 text-sm font-medium rounded-full border border-white/5">
-                                                {skill}
-                                            </span>
-                                        ))}
-                                        {(!jobDetails.requiredSkills || jobDetails.requiredSkills.length === 0) && (
-                                            <span className="text-zinc-600 text-sm italic">No specific skills listed.</span>
-                                        )}
+                                        <span className="px-4 py-2 bg-zinc-900 text-zinc-300 text-sm font-medium rounded-full border border-white/5">{jobDetails.allowedBranches?.length ? `Branches: ${jobDetails.allowedBranches.join(', ')}` : 'All branches'}</span>
                                     </div>
                                 </div>
                             </div>
@@ -110,14 +103,6 @@ const JobDetailsModal = ({ jobId, onClose, hasApplied, onApply }) => {
                                         <li className="flex justify-between border-b border-white/5 pb-2">
                                             <span className="text-zinc-500">CGPA Minimum</span> 
                                             <span className="text-white">{jobDetails.cgpaCutoff}</span>
-                                        </li>
-                                        <li className="flex justify-between border-b border-white/5 pb-2">
-                                            <span className="text-zinc-500">12th Grade</span> 
-                                            <span className="text-white">{jobDetails.twelfthCutoff}%</span>
-                                        </li>
-                                        <li className="flex justify-between border-b border-white/5 pb-2">
-                                            <span className="text-zinc-500">10th Grade</span> 
-                                            <span className="text-white">{jobDetails.tenthCutoff}%</span>
                                         </li>
                                     </ul>
                                 </div>
@@ -146,6 +131,7 @@ const JobDetailsModal = ({ jobId, onClose, hasApplied, onApply }) => {
 
                         {/* Actions */}
                         <div className="flex justify-end gap-4 border-t border-white/5 pt-8">
+                            {eligibilityReason && <p className="mr-auto self-center text-sm text-amber-300">{eligibilityReason}</p>}
                             <button onClick={onClose} className="px-8 py-4 bg-zinc-900 hover:bg-zinc-800 text-white font-medium rounded-full transition-colors flex-1 md:flex-none">
                                 Close
                             </button>
@@ -154,14 +140,14 @@ const JobDetailsModal = ({ jobId, onClose, hasApplied, onApply }) => {
                                     onApply(jobId);
                                     onClose();
                                 }}
-                                disabled={hasApplied}
+                                disabled={hasApplied || Boolean(eligibilityReason)}
                                 className={`px-12 py-4 font-medium rounded-full transition-colors flex-[2] md:flex-none ${
-                                    hasApplied 
+                                    hasApplied || eligibilityReason
                                     ? "bg-zinc-800/50 text-zinc-500 cursor-not-allowed border border-white/5" 
                                     : "bg-white hover:bg-zinc-200 text-black"
                                 }`}
                             >
-                                {hasApplied ? "Application Submitted" : "Submit Application"}
+                                {hasApplied ? "Application Submitted" : eligibilityReason ? "Not Eligible" : "Submit Application"}
                             </button>
                         </div>
 
