@@ -148,6 +148,10 @@ const StudentDash = () => {
                         studentProfile: { ...studentProfile, placementStatus }
                     }
                 }));
+                setJobs((current) => current.map((job) => ({
+                    ...job,
+                    eligibilityReason: "You have already accepted an offer and are marked as placed.",
+                })));
             }
         } catch (err) {
             toast(err.response?.data?.message || 'Could not update this offer. Please try again.', 'error');
