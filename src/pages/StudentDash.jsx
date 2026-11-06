@@ -194,7 +194,7 @@ const StudentDash = () => {
                     </div>
                     <div className="flex flex-col">
                         <span className="text-sm font-semibold tracking-widest uppercase text-zinc-500 mb-2">Open Positions</span>
-                        <span className="text-5xl font-serif italic text-white/90">{jobs.reduce((total, job) => total + (Number(job.positionsAvailable) || 0), 0)}</span>
+                        <span className="text-5xl font-serif italic text-white/90">{jobs.reduce((total, job) => total + (Number(job.remainingPositions ?? job.positionsAvailable) || 0), 0)}</span>
                     </div>
                     <div className="flex flex-col">
                         <span className="text-sm font-semibold tracking-widest uppercase text-zinc-500 mb-2">Profile Integrity</span>
@@ -322,6 +322,7 @@ const StudentDash = () => {
                                                 <h3 className="text-2xl font-bold tracking-tight text-white/90 mb-2">{job.title}</h3>
                                                 <div className="text-zinc-500 text-sm mb-4 font-semibold tracking-wider uppercase">{job.company?.name || 'Undisclosed'}</div>
                                                 {job.eligibilityReason && <p className="mb-3 text-xs leading-relaxed text-amber-300">{job.eligibilityReason}</p>}
+                                                {job.remainingPositions === 0 && <p className="mb-3 text-xs leading-relaxed text-zinc-400">All positions have been filled.</p>}
                                                 
                                                 <div className="flex gap-4 text-sm text-zinc-400 border-t border-white/5 pt-4">
                                                     <span>{job.location}</span>
@@ -339,10 +340,10 @@ const StudentDash = () => {
                                                 </button>
                                                 <button 
                                                     onClick={() => handleApply(job._id)}
-                                                    disabled={appliedJobs.has(job._id) || Boolean(job.eligibilityReason)}
-                                                    className={`px-6 py-3 text-sm font-semibold rounded-full transition-colors flex-[2] ${appliedJobs.has(job._id) || job.eligibilityReason ? "bg-zinc-800/50 text-zinc-500 cursor-not-allowed border border-white/5" : "bg-white text-black hover:bg-zinc-200"}`}
+                                                    disabled={appliedJobs.has(job._id) || Boolean(job.eligibilityReason) || job.remainingPositions === 0}
+                                                    className={`px-6 py-3 text-sm font-semibold rounded-full transition-colors flex-[2] ${appliedJobs.has(job._id) || job.eligibilityReason || job.remainingPositions === 0 ? "bg-zinc-800/50 text-zinc-500 cursor-not-allowed border border-white/5" : "bg-white text-black hover:bg-zinc-200"}`}
                                                 >
-                                                    {appliedJobs.has(job._id) ? "Applied" : job.eligibilityReason ? "Not Eligible" : "Apply Now"}
+                                                    {appliedJobs.has(job._id) ? "Applied" : job.eligibilityReason ? "Not Eligible" : job.remainingPositions === 0 ? "Filled" : "Apply Now"}
                                                 </button>
                                             </div>
                                         </div>

@@ -82,7 +82,7 @@ const JobDetailsModal = ({ jobId, onClose, hasApplied, eligibilityReason, onAppl
                                         </div>
                                         <div className="bg-zinc-900 p-4 rounded-2xl border border-white/5">
                                             <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1">Openings</p>
-                                            <p className="text-white font-medium">{jobDetails.positionsAvailable}</p>
+                                            <p className="text-white font-medium">{jobDetails.remainingPositions ?? jobDetails.positionsAvailable} remaining</p>
                                         </div>
                                     </div>
                                 </div>
@@ -140,14 +140,14 @@ const JobDetailsModal = ({ jobId, onClose, hasApplied, eligibilityReason, onAppl
                                     onApply(jobId);
                                     onClose();
                                 }}
-                                disabled={hasApplied || Boolean(eligibilityReason)}
+                                disabled={hasApplied || Boolean(eligibilityReason) || jobDetails.remainingPositions === 0}
                                 className={`px-12 py-4 font-medium rounded-full transition-colors flex-[2] md:flex-none ${
-                                    hasApplied || eligibilityReason
+                                    hasApplied || eligibilityReason || jobDetails.remainingPositions === 0
                                     ? "bg-zinc-800/50 text-zinc-500 cursor-not-allowed border border-white/5" 
                                     : "bg-white hover:bg-zinc-200 text-black"
                                 }`}
                             >
-                                {hasApplied ? "Application Submitted" : eligibilityReason ? "Not Eligible" : "Submit Application"}
+                                {hasApplied ? "Application Submitted" : eligibilityReason ? "Not Eligible" : jobDetails.remainingPositions === 0 ? "Positions Filled" : "Submit Application"}
                             </button>
                         </div>
 

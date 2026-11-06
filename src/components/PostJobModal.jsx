@@ -3,6 +3,8 @@ import axios from 'axios';
 import { useSelector } from 'react-redux';
 import { useToast } from './ToastContext';
 
+const BRANCH_OPTIONS = ['CSE', 'IT', 'ECE', 'EE', 'ME', 'CE', 'OTHER'];
+
 const PostJobModal = ({ isOpen, onClose, onJobPosted, editJob = null }) => {
     const toast = useToast();
     const userData = useSelector((state) => state.auth.userData);
@@ -212,15 +214,24 @@ const PostJobModal = ({ isOpen, onClose, onJobPosted, editJob = null }) => {
                         <div><h3 className="font-semibold text-white">Eligibility</h3><p className="mt-1 text-xs text-zinc-500">Only selected branches and minimum CGPA affect who can apply. Leave branches empty to allow all branches.</p></div>
                         <label className="block max-w-xs text-xs uppercase tracking-widest text-zinc-400">Minimum CGPA<input type="number" name="cgpaCutoff" min="0" max="10" step="0.01" value={formData.cgpaCutoff} onChange={handleChange} className="mt-2 w-full rounded-xl border border-white/10 bg-zinc-900 p-3 text-white" /></label>
                         <div>
-                            <p className="mb-2 text-xs uppercase tracking-widest text-zinc-400">Eligible branches</p>
-                            <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-                                {['CSE', 'IT', 'ECE', 'EE', 'ME', 'CE', 'OTHER'].map((branch) => (
-                                    <label key={branch} className="flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-zinc-200">
-                                        <input type="checkbox" checked={formData.allowedBranches.includes(branch)} onChange={() => toggleBranch(branch)} />
+                            <div className="mb-2 flex items-center justify-between gap-3">
+                                <p className="text-xs uppercase tracking-widest text-zinc-400">Eligible branches</p>
+                                <div className="flex gap-3 text-xs">
+                                    <button type="button" onClick={() => setFormData((current) => ({ ...current, allowedBranches: [...BRANCH_OPTIONS] }))} className="text-indigo-300 hover:text-white">Select all</button>
+                                    <button type="button" onClick={() => setFormData((current) => ({ ...current, allowedBranches: [] }))} className="text-zinc-400 hover:text-white">Clear</button>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 md:grid-cols-4" role="group" aria-label="Select eligible branches">
+                                {BRANCH_OPTIONS.map((branch) => (
+                                    <label key={branch} className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors ${formData.allowedBranches.includes(branch) ? 'border-indigo-400/60 bg-indigo-950/50 text-white' : 'border-white/10 bg-zinc-900 text-zinc-300'}`}>
+                                        <input type="checkbox" name="allowedBranches" value={branch} checked={formData.allowedBranches.includes(branch)} onChange={() => toggleBranch(branch)} className="accent-indigo-400" />
                                         {branch}
                                     </label>
                                 ))}
                             </div>
+                            <p className="mt-2 text-xs text-zinc-500" aria-live="polite">
+                                {formData.allowedBranches.length ? `Selected: ${formData.allowedBranches.join(', ')}` : 'No branch restriction — all branches are eligible.'}
+                            </p>
                         </div>
                     </section>
 
